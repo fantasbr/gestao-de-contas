@@ -1,0 +1,67 @@
+# ============================================
+# .dockerignore - Otimização de Build
+# ============================================
+
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Next.js
+.next
+out
+build
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+!.env.example
+!.env.swarm
+
+# Secrets (não devem ser incluídos na imagem)
+secrets
+*.pem
+*.key
+
+# Documentation
+*.md
+!README.md
+
+# Tests
+coverage
+.nyc_output
+*.test.js
+*.spec.js
+__tests__
+
+# Scripts
+scripts/*.sh
+scripts/*.ps1
+
+# Nginx SSL (descomente se usar SSL)
+# nginx/ssl/*
+
+# Misc
+*.log
+*.tmp
+*.temp
+.DS_Store
