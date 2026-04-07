@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { useAuth } from '@/lib/hooks';
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { Sidebar } from '@/components/layout';
 import { Loader2 } from 'lucide-react';
 
@@ -11,27 +11,30 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isLoading } = useAuth();
   const router = useRouter();
+  const supabase = createClient();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isLoading, router]);
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        router.push('/login');
+      } else {
+        setIsChecking(false);
+      }
+    };
 
-  // Mostra loading enquanto verifica autenticação
-  if (isLoading) {
+    checkAuth();
+  }, [router, supabase]);
+
+  if (isChecking) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
-  }
-
-  // Não renderiza nada se não estiver autenticado
-  if (!user) {
-    return null;
   }
 
   return (

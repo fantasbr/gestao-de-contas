@@ -1,12 +1,9 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  // Criar resposta inicial
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+  let supabaseResponse = NextResponse.next({
+    request,
   });
 
   // Criar cliente Supabase para verificar autenticação
@@ -15,86 +12,73 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({
+            request,
           });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options as Parameters<typeof supabaseResponse.cookies.set>[2])
+          );
         },
       },
     }
   );
 
-  // ✅ CORRIGIDO: Verificar corretamente se o usuário está autenticado
-  const { data: { user }, error } = await supabase.auth.getUser();
-
-  // Pega o pathname atual
   const pathname = request.nextUrl.pathname;
 
   // Verifica se é uma rota protegida
-  const isProtectedRoute = pathname.startsWith('/dashboard') || 
-                           pathname.startsWith('/contas') ||
-                           pathname.startsWith('/fornecedores') ||
-                           pathname.startsWith('/categorias') ||
-                           pathname.startsWith('/empresas') ||
-                           pathname.startsWith('/configuracoes') ||
-                           pathname.startsWith('/relatorios');
+  const isProtectedRoute =
+    pathname === '/' ||
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/contas') ||
+    pathname.startsWith('/fornecedores') ||
+    pathname.startsWith('/categorias') ||
+    pathname.startsWith('/empresas') ||
+    pathname.startsWith('/configuracoes') ||
+    pathname.startsWith('/relatorios');
 
   const isAuthRoute = pathname.startsWith('/login');
 
+  // Otimização: Se não é rota de auth nem protegida, retorna logo (pula rede do Supabase)
+  if (!isProtectedRoute && !isAuthRoute) {
+    return supabaseResponse;
+  }
+
+  // Verificar se o usuário está autenticado
+  // Esta chamada faz requisição à API do Supabase e causa lentidão se não for filtrada
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Redirecionamento da raiz puro para dashboard ou login
+  if (pathname === '/') {
+    const url = request.nextUrl.clone();
+    url.pathname = user ? '/dashboard' : '/login';
+    return NextResponse.redirect(url);
+  }
+
   // Se não está autenticado e tenta acessar rota protegida, redireciona para login
-  if (isProtectedRoute) {
-    // ✅ CORRIGIDO: Verifica user diretamente, não só o cookie
-    if (!user || error) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      url.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(url);
-    }
+  if (isProtectedRoute && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(url);
   }
 
   // Se está autenticado e tenta acessar login, redireciona para dashboard
-  if (isAuthRoute) {
-    // ✅ CORRIGIDO: Verifica user diretamente, não só o cookie
-    if (user && !error) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/dashboard';
-      return NextResponse.redirect(url);
-    }
+  if (isAuthRoute && user) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/dashboard';
+    return NextResponse.redirect(url);
   }
 
-  return response;
+  return supabaseResponse;
 }
 
 export const config = {

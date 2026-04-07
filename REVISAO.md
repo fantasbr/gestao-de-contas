@@ -1,8 +1,27 @@
 # Revisão Detalhada - Sistema de Contas a Pagar
 
 **Data da Revisão:** Janeiro 2025  
-**Data da Última Atualização:** Janeiro 2025  
-**Status:** ~92% Completo
+**Data da Última Atualização:** Abril 2026  
+**Status:** ~98% Completo
+
+---
+
+## 0. ESPECIFICAÇÕES TÉCNICAS ATUAIS (MIGRAÇÃO ABRIL 2026)
+
+### 0.1 Upgrade Next.js 16 & React 19 ✅ CONCLUÍDO
+**Data:** 06 de Abril de 2026
+
+**Mudanças Principais:**
+- **Framework:** Next.js 14.2.21 ➔ **16.2.1**
+- **Bundler:** Webpack ➔ **Turbopack** (Dev server ~500ms)
+- **React:** v18 ➔ **v19.1** (Estrito, suporte a React Compiler)
+- **Estilização:** Tailwind CSS v3 ➔ **v4.1** (Engine em Rust, config via CSS `@theme`)
+- **Runtime:** Node.js 18 ➔ **Node.js 22** (Docker image updated)
+
+**Refatorações Críticas:**
+- `middleware.ts` ➔ `proxy.ts`: Migração para o novo padrão de roteamento do Next.js 16.
+- **Supabase SSR:** Atualização da API de Cookies de `get/set/remove` para `getAll/setAll` conforme recomendação oficial.
+- **SideBar:** Ajuste de tipagem para e-mail (`string | null`) devido à maior estritura do React 19.
 
 ---
 

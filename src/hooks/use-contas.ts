@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { ContaPagar, ContaPagarComRelacionamentos } from '@/types';
 import type { StatusConta, StatusProcessamento } from '@/types/database';
@@ -23,7 +23,10 @@ export function useContas() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
-  const supabase = createClient();
+  
+  // Usar ref para manter cliente estável
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   const listarContas = useCallback(async (
     filtros: FiltrosContas = {},
@@ -38,9 +41,9 @@ export function useContas() {
         .from('contas_pagar')
         .select(`
           *,
-          fornecedor:fornecedores(*),
-          categoria:categorias(*),
-          empresa:empresas(*)
+          fornecedor:fornecedores(id, nome),
+          categoria:categorias(id, nome),
+          empresa:empresas(id_empresa, nome)
         `, { count: 'exact' })
         .is('deleted_at', null);
 
@@ -89,7 +92,7 @@ export function useContas() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
   const obterConta = useCallback(async (id: string) => {
     setIsLoading(true);
@@ -118,9 +121,9 @@ export function useContas() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
-  const criarConta = useCallback(async (conta: Partial<ContaPagar>) => {
+  const criarConta = useCallback(async (contaData: Partial<ContaPagar>) => {
     setIsLoading(true);
     setError(null);
 
@@ -129,23 +132,21 @@ export function useContas() {
       
       const { data, error } = await supabase
         .from('contas_pagar')
-        .insert({ ...conta, created_by: user?.id })
+        .insert({ ...contaData, created_by: user?.id })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Registrar em log (com tratamento de erro)
-      try {
-        await supabase.from('contas_log').insert({
-          conta_id: data.id,
-          acao: 'criado',
-          dados_novos: data,
-          realizado_por: user?.id,
-        });
-      } catch (logError) {
-        console.error('Erro ao registrar log de auditoria:', logError);
-      }
+      // Registrar log em background (não bloquear)
+      supabase.from('contas_log').insert({
+        conta_id: data.id,
+        acao: 'criado',
+        dados_novos: data,
+        realizado_por: user?.id,
+      }).then(({ error: logError }) => {
+        if (logError) console.error('Log auditoria:', logError);
+      });
 
       return data;
     } catch (err: any) {
@@ -154,7 +155,7 @@ export function useContas() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
   const atualizarConta = useCallback(async (id: string, updates: Partial<ContaPagar>) => {
     setIsLoading(true);
@@ -179,18 +180,16 @@ export function useContas() {
 
       if (error) throw error;
 
-      // Registrar em log (com tratamento de erro)
-      try {
-        await supabase.from('contas_log').insert({
-          conta_id: id,
-          acao: 'editado',
-          dados_anteriores: anterior,
-          dados_novos: data,
-          realizado_por: user?.id,
-        });
-      } catch (logError) {
-        console.error('Erro ao registrar log de auditoria:', logError);
-      }
+      // Registrar log em background
+      supabase.from('contas_log').insert({
+        conta_id: id,
+        acao: 'editado',
+        dados_anteriores: anterior,
+        dados_novos: data,
+        realizado_por: user?.id,
+      }).then(({ error: logError }) => {
+        if (logError) console.error('Log auditoria:', logError);
+      });
 
       return data;
     } catch (err: any) {
@@ -199,7 +198,7 @@ export function useContas() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
   const marcarConferido = useCallback(async (id: string, observacao?: string) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -210,7 +209,7 @@ export function useContas() {
       conferido_em: new Date().toISOString(),
       observacao_conferido: observacao,
     });
-  }, [atualizarConta]);
+  }, [atualizarConta, supabase]);
 
   const registrarPagamento = useCallback(async (
     id: string,
@@ -238,16 +237,14 @@ export function useContas() {
 
       if (error) throw error;
 
-      // Registrar em log (com tratamento de erro)
-      try {
-        await supabase.from('contas_log').insert({
-          conta_id: id,
-          acao: 'excluido',
-          realizado_por: user?.id,
-        });
-      } catch (logError) {
-        console.error('Erro ao registrar log de auditoria:', logError);
-      }
+      // Registrar log em background
+      supabase.from('contas_log').insert({
+        conta_id: id,
+        acao: 'excluido',
+        realizado_por: user?.id,
+      }).then(({ error: logError }) => {
+        if (logError) console.error('Log auditoria:', logError);
+      });
 
       return true;
     } catch (err: any) {
@@ -256,64 +253,92 @@ export function useContas() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
-  // Estatísticas para dashboard
+  // Estatísticas otimizadas com queries paralelas
   const obterEstatisticas = useCallback(async () => {
     const hoje = new Date().toISOString().split('T')[0];
     const seteDias = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    // Executar TODAS as queries em PARALELO usando RPC para melhor performance
-    const [totalResult, pendentesResult, vencidasResult, proximosResult] = await Promise.all([
-      // Total de contas não pagas
-      supabase
-        .from('contas_pagar')
-        .select('valor', { count: 'exact', head: true })
-        .is('deleted_at', null)
-        .neq('status', 'pago'),
-      
-      // Pendentes
-      supabase
-        .from('contas_pagar')
-        .select('id', { count: 'exact', head: true })
-        .is('deleted_at', null)
-        .eq('status', 'pendente'),
-      
-      // Vencidas
-      supabase
-        .from('contas_pagar')
-        .select('id', { count: 'exact', head: true })
-        .is('deleted_at', null)
-        .eq('status', 'pendente')
-        .lt('data_vencimento', hoje),
-      
-      // Próximos 7 dias
-      supabase
-        .from('contas_pagar')
-        .select('id', { count: 'exact', head: true })
-        .is('deleted_at', null)
-        .eq('status', 'pendente')
-        .gte('data_vencimento', hoje)
-        .lte('data_vencimento', seteDias),
-    ]);
+    try {
+      // Executar TODAS as queries em PARALELO
+      const [totalResult, pendentesResult, vencidasResult, proximosResult, valorResult] = await Promise.all([
+        // Total de contas não pagas
+        supabase
+          .from('contas_pagar')
+          .select('valor', { count: 'exact', head: true })
+          .is('deleted_at', null)
+          .neq('status', 'pago'),
+        
+        // Pendentes
+        supabase
+          .from('contas_pagar')
+          .select('id', { count: 'exact', head: true })
+          .is('deleted_at', null)
+          .eq('status', 'pendente'),
+        
+        // Vencidas (pendente + data < hoje)
+        supabase
+          .from('contas_pagar')
+          .select('id', { count: 'exact', head: true })
+          .is('deleted_at', null)
+          .eq('status', 'pendente')
+          .lt('data_vencimento', hoje),
+        
+        // Próximos 7 dias
+        supabase
+          .from('contas_pagar')
+          .select('id', { count: 'exact', head: true })
+          .is('deleted_at', null)
+          .eq('status', 'pendente')
+          .gte('data_vencimento', hoje)
+          .lte('data_vencimento', seteDias),
+          
+        // Soma dos valores (apenas não pagos)
+        supabase
+          .from('contas_pagar')
+          .select('valor')
+          .is('deleted_at', null)
+          .neq('status', 'pago'),
+      ]);
 
-    // Buscar soma dos valores usando RPC (mais rápido que reduzir no cliente)
-    const { data: valorData } = await supabase
-      .from('contas_pagar')
-      .select('valor')
-      .is('deleted_at', null)
-      .neq('status', 'pago');
+      // Calcular soma no cliente (Supabase não tem sum nativo em all)
+      const totalValor = valorResult.data?.reduce((acc, curr) => acc + Number(curr.valor || 0), 0) || 0;
 
-    const totalValor = valorData?.reduce((acc, curr) => acc + Number(curr.valor), 0) || 0;
+      return {
+        total: totalResult.count || 0,
+        totalValor,
+        pendentes: pendentesResult.count || 0,
+        vencidas: vencidasResult.count || 0,
+        proximosVencimentos: proximosResult.count || 0,
+      };
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas:', error);
+      return {
+        total: 0,
+        totalValor: 0,
+        pendentes: 0,
+        vencidas: 0,
+        proximosVencimentos: 0,
+      };
+    }
+  }, [supabase]);
 
-    return {
-      total: totalResult.count || 0,
-      totalValor,
-      pendentes: pendentesResult.count || 0,
-      vencidas: vencidasResult.count || 0,
-      proximosVencimentos: proximosResult.count || 0,
-    };
-  }, []);
+  // Carregar dashboard completo (estatísticas + contas) em paralelo
+  const carregarDashboard = useCallback(async () => {
+    setIsLoading(true);
+    
+    try {
+      const [stats, contasData] = await Promise.all([
+        obterEstatisticas(),
+        listarContas({}, 1, 5),
+      ]);
+      
+      return { stats, contas: contasData };
+    } finally {
+      setIsLoading(false);
+    }
+  }, [obterEstatisticas, listarContas]);
 
   return {
     contas,
@@ -329,5 +354,6 @@ export function useContas() {
     registrarPagamento,
     excluirConta,
     obterEstatisticas,
+    carregarDashboard,
   };
 }

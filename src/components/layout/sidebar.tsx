@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/lib/hooks';
+import { createClient } from '@/lib/supabase/client';
 import {
   LayoutDashboard,
   Receipt,
@@ -15,6 +15,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
 
 const menuItems = [
   {
@@ -64,14 +65,43 @@ const menuItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const supabase = createClient();
+  const [userInfo, setUserInfo] = useState<{ nome: string | null; email: string | null; role: string | null } | null>(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        // Buscar role do metadata primeiro (mais rápido)
+        const role = session.user.user_metadata?.role || null;
+        const nome = session.user.user_metadata?.nome || session.user.email?.split('@')[0] || null;
+        setUserInfo({
+          nome,
+          email: session.user.email ?? null,
+          role,
+        });
+
+        // Tentar buscar perfil em background (não bloquear)
+        const { data: perfil } = await supabase
+          .from('perfis_usuarios')
+          .select('role, nome')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (perfil) {
+          setUserInfo(prev => prev ? { ...prev, role: perfil.role, nome: perfil.nome || prev.nome } : null);
+        }
+      }
+    };
+    loadUser();
+  }, [supabase]);
 
   const filteredMenu = menuItems.filter(
-    (item) => user && item.roles.includes(user.role || '')
+    (item) => userInfo && item.roles.includes(userInfo.role || '')
   );
 
   const handleSignOut = async () => {
-    await signOut();
+    await supabase.auth.signOut();
     router.push('/login');
   };
 
@@ -111,10 +141,10 @@ export function Sidebar() {
         <div className="flex items-center gap-3 px-3 py-2">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">
-              {user?.nome || user?.email}
+              {userInfo?.nome || userInfo?.email}
             </p>
             <p className="text-xs text-muted-foreground capitalize">
-              {user?.role || 'Sem role'}
+              {userInfo?.role || 'Carregando...'}
             </p>
           </div>
         </div>

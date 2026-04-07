@@ -1,82 +1,33 @@
 # ============================================
-# Docker Compose - Sistema de Contas a Pagar
+# Docker Compose Local - Sistema de Contas a Pagar
 # ============================================
-# Uso: docker stack deploy -c docker-compose.yml contas
-# Requer: Docker Swarm inicializado (docker swarm init)
+# Uso: docker compose up -d
+# Este arquivo é destinado exclusivamente ao ambiente de DESENVOLVIMENTO local.
 
-version: '3.8'
+version: "3.8"
 
 services:
   app:
-    image: contas-app:latest
     build:
       context: .
-      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_APP_URL: ${APP_URL:-http://localhost:3000}
     ports:
       - "3000:3000"
     environment:
-      # URLs e chaves públicas (podem ser via config ou secrets)
-      - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL:-}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
-      - NEXT_PUBLIC_APP_URL=${APP_URL:-http://localhost:3000}
-      
-      # Variáveis para Docker Secrets (lidas dos arquivos)
-      - SUPABASE_SERVICE_ROLE_KEY_FILE=/run/secrets/supabase_service_role_key
-      - AWS_ACCESS_KEY_ID_FILE=/run/secrets/aws_access_key_id
-      - AWS_SECRET_ACCESS_KEY_FILE=/run/secrets/aws_secret_access_key
+      - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_REGION=${AWS_REGION:-us-east-1}
-      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-}
-    secrets:
-      - supabase_service_role_key
-      - aws_access_key_id
-      - aws_secret_access_key
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      - APP_URL=${APP_URL:-http://localhost:3000}
     volumes:
-      # Para desenvolvimento, pode mapear código fonte
-      # - .:/app:ro
-    networks:
-      - frontend
-      - backend
-    deploy:
-      replicas: 2
-      update_config:
-        parallelism: 1
-        delay: 10s
-        failure_action: rollback
-        monitor: 30s
-      rollback_config:
-        parallelism: 1
-        delay: 5s
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - contas_data_local:/app/data
 
-networks:
-  frontend:
-    driver: overlay
-    attachable: true
-  backend:
-    driver: overlay
-    attachable: true
-
-# Definição de secrets (arquivos externos)
-secrets:
-  supabase_service_role_key:
-    file: ./secrets/supabase_service_role_key.txt
-  aws_access_key_id:
-    file: ./secrets/aws_access_key_id.txt
-  aws_secret_access_key:
-    file: ./secrets/aws_secret_access_key.txt
+volumes:
+  contas_data_local:
+    name: contas_local_data

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/hooks';
@@ -13,9 +13,21 @@ function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signIn } = useAuth();
+  const { signIn, user, isLoading: authLoading } = useAuth();
+
+  // Redirecionar se já logado
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace('/dashboard');
+      return;
+    }
+    if (!authLoading && !user) {
+      setIsReady(true);
+    }
+  }, [user, authLoading, router]);
 
   const redirect = searchParams.get('redirect') || '/dashboard';
 
@@ -35,7 +47,6 @@ function LoginForm() {
 
     toast.success('Login realizado com sucesso!');
     router.push(redirect);
-    router.refresh();
   };
 
   return (

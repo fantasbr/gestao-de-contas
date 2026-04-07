@@ -4,7 +4,7 @@
 
 **Objetivo:** Sistema interno para controle e gestão de contas a pagar da empresa  
 **Público:** Funcionários internos (admin, atendentes, motoristas)  
-**Stack:** Next.js + Supabase (Auth + Database) + n8n (automação) + AWS S3 (armazenamento)
+**Stack:** Next.js 16 (Turbopack) + React 19 + Tailwind CSS v4 + Supabase + n8n + AWS S3
 
 ---
 

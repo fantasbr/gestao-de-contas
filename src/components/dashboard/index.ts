@@ -1,1 +1,1 @@
-export { StatsCard } from './stats-card';
+export { StatsCard, SkeletonCard } from './stats-card';

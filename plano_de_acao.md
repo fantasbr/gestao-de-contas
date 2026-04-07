@@ -2,9 +2,22 @@
 
 ## Visão Geral
 
-**Estimativa Total:** ~60-80 horas  
-**Fases:** 13 fases sequenciais  
-**Status:** ✅ **PROJETO CONCLUÍDO**
+**Estimativa Total:** ~80-100 horas  
+**Fases:** 14 fases  
+**Status:** ✅ **MIGRAÇÃO NEXT.JS 16 CONCLUÍDA**
+
+---
+
+## FASE 0: Upgrade de Infraestrutura (Abril 2026)
+**Status:** ✅ Concluída
+
+- [x] Upgrade Next.js 14 ➔ 16.2.1
+- [x] Migração Webpack ➔ Turbopack
+- [x] Upgrade React 18 ➔ 19.1
+- [x] Upgrade Tailwind CSS v3 ➔ v4.1
+- [x] Migração `middleware.ts` ➔ `proxy.ts`
+- [x] Atualização Supabase SSR (API Cookies `getAll/setAll`)
+- [x] Upgrade Docker Base Image (Node 20 ➔ 22)
 
 ---
 
@@ -325,8 +338,8 @@
 - [ ] Masks de CNPJ/CPF (pendente)
 
 ### 12.3 Tratamento de Erros
-- [ ] Página de erro 404 (pendente)
-- [ ] Página de erro 500 (pendente)
+- [x] Página de erro 404
+- [x] Página de erro 500
 - [x] Mensagens de erro amigáveis
 
 ---
@@ -392,7 +405,7 @@
 
 ### Baixa Prioridade
 - [ ] Lazy loading
-- [ ] Páginas de erro customizadas
+- [x] Páginas de erro customizadas
 - [ ] Favicon e Open Graph
 - [ ] Testes automatizados
 

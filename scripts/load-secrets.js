@@ -1,11 +1,10 @@
 // ============================================
 // Load Secrets - Carrega secrets de arquivos
 // ============================================
-// Este arquivo é executado antes do Next.js iniciar
-// para carregar secrets de arquivos Docker Secrets
+// Carrega secrets de arquivos Docker Secrets
+// Útil para variáveis que precisam ser lidas em runtime
 
 const fs = require('fs');
-const path = require('path');
 
 /**
  * Carrega um secret de um arquivo
@@ -14,7 +13,6 @@ const path = require('path');
  */
 function loadSecret(envVar, filePath) {
   if (process.env[envVar]) {
-    // Se já está definido via env, não sobrescreve
     return;
   }
 
@@ -37,17 +35,16 @@ function loadSecret(envVar, filePath) {
 function loadSecrets() {
   console.log('🔐 Loading Docker Secrets...');
 
-  // Supabase
-  loadSecret('SUPABASE_SERVICE_ROLE_KEY', '/run/secrets/supabase_service_role_key');
+  // Supabase (variáveis públicas)
+  loadSecret('NEXT_PUBLIC_SUPABASE_URL', '/run/secrets/supabase_url');
+  loadSecret('NEXT_PUBLIC_SUPABASE_ANON_KEY', '/run/secrets/supabase_anon_key');
   
-  // AWS
-  loadSecret('AWS_ACCESS_KEY_ID', '/run/secrets/aws_access_key_id');
-  loadSecret('AWS_SECRET_ACCESS_KEY', '/run/secrets/aws_secret_access_key');
+  // Supabase (variável privada)
+  loadSecret('SUPABASE_SERVICE_ROLE_KEY', '/run/secrets/supabase_service_role_key');
 
   console.log('🔐 Secrets loaded successfully!');
 }
 
-// Executar se chamado diretamente
 if (require.main === module) {
   loadSecrets();
 }

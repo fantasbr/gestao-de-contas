@@ -3,6 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface StatsCardProps {
   title: string;
@@ -34,6 +35,28 @@ export function StatsCard({ title, value, subtitle, icon: Icon, variant = 'defau
           <div className={cn('p-3 rounded-full', variantStyles[variant])}>
             <Icon className="h-6 w-6" />
           </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Skeleton para loading
+export function SkeletonCard({ variant = 'text' }: { variant?: 'card' | 'text' }) {
+  if (variant === 'text') {
+    return <Skeleton className="h-6 w-32" />;
+  }
+
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-8 w-16" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+          <Skeleton className="h-12 w-12 rounded-full" />
         </div>
       </CardContent>
     </Card>

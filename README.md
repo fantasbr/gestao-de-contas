@@ -4,15 +4,16 @@ Sistema interno para controle e gestão de contas a pagar da empresa.
 
 ## Tecnologias
 
-- **Frontend:** Next.js 14 (App Router)
-- **Estilização:** Tailwind CSS + shadcn/ui
+- **Frontend:** Next.js 16.2.1 (App Router + Turbopack)
+- **React:** 19.1
+- **Estilização:** Tailwind CSS v4 + shadcn/ui
 - **Backend:** Supabase (Auth + Database)
 - **Automação:** n8n
 - **Armazenamento:** AWS S3
 
 ## Requisitos
 
-- Node.js 18+
+- Node.js 20.9+ (Recomendado 22+)
 - npm ou yarn
 - Projeto Supabase configurado
 - AWS S3 bucket (opcional, para armazenamento de arquivos)

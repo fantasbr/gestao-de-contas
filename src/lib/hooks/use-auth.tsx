@@ -1,7 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { PerfilUsuario } from '@/types';
 
@@ -27,34 +26,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
+  const perfilLoadedRef = useRef(false);
 
-  const fetchPerfil = async (userId: string): Promise<PerfilUsuario | null> => {
-    const { data } = await supabase
-      .from('perfis_usuarios')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    return data;
-  };
-
-  const loadUser = async () => {
+  // Função para carregar usuário de forma otimizada
+  const loadUser = useCallback(async (skipPerfil = false) => {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!authUser) {
+      if (!session?.user) {
         setUser(null);
-        setIsLoading(false);
         return;
       }
 
-      const perfil = await fetchPerfil(authUser.id);
+      const authUser = session.user;
 
-      setUser({
-        id: authUser.id,
-        email: authUser.email || '',
-        role: perfil?.role || null,
-        nome: perfil?.nome || authUser.user_metadata?.nome || null,
-        perfil,
+      let perfil: PerfilUsuario | null = null;
+      
+      if (!skipPerfil) {
+        const { data } = await supabase
+          .from('perfis_usuarios')
+          .select('*')
+          .eq('id', authUser.id)
+          .single();
+        perfil = data;
+        perfilLoadedRef.current = true;
+      }
+
+      setUser((prev) => {
+        // Evita atualizações desnecessárias se os dados não mudaram
+        if (prev?.id === authUser.id && (skipPerfil || prev?.perfil)) {
+            // Apenas atualiza se o perfil foi carregado e não tínhamos antes
+            if (!skipPerfil && !prev.perfil && perfil) {
+                 return { ...prev, perfil };
+            }
+            return prev;
+        }
+
+        return {
+          id: authUser.id,
+          email: authUser.email || '',
+          role: perfil?.role || authUser.user_metadata?.role || null,
+          nome: perfil?.nome || authUser.user_metadata?.nome || authUser.email?.split('@')[0] || null,
+          perfil,
+        };
       });
     } catch (error) {
       console.error('Erro ao carregar usuário:', error);
@@ -62,19 +76,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [supabase]);
 
+  // Inicialização apenas na montagem para evitar loop infinito
   useEffect(() => {
-    loadUser();
+    let mounted = true;
+
+    const inicializar = async () => {
+      if (!mounted) return;
+      await loadUser(true); // Carga rápida sem perfil
+      
+      if (mounted) {
+        // Busca o perfil em segundo plano após a renderização inicial
+        setTimeout(() => {
+          if (mounted) loadUser(false);
+        }, 500);
+      }
+    };
+
+    inicializar();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session?.user) {
-          const perfil = await fetchPerfil(session.user.id);
+          const { data: perfil } = await supabase
+            .from('perfis_usuarios')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
           setUser({
             id: session.user.id,
             email: session.user.email || '',
-            role: perfil?.role || null,
+            role: perfil?.role || session.user.user_metadata?.role || null,
             nome: perfil?.nome || session.user.user_metadata?.nome || null,
             perfil,
           });
@@ -84,8 +120,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase, loadUser]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -93,11 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
 
-    if (error) {
-      return { error };
-    }
-
-    return { error: null };
+    return { error };
   };
 
   const signOut = async () => {
@@ -106,7 +141,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshUser = async () => {
-    await loadUser();
+    setIsLoading(true);
+    await loadUser(false);
   };
 
   return (
