@@ -1,37 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/hooks';
 import { Loader2 } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
-  const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
-  const supabase = createClient();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    // Verificação rápida de sessão
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        setStatus('authenticated');
+    if (!isLoading) {
+      if (user) {
+        router.replace('/dashboard');
       } else {
-        setStatus('unauthenticated');
+        router.replace('/login');
       }
-    };
-
-    checkAuth();
-  }, [supabase]);
-
-  useEffect(() => {
-    if (status === 'authenticated') {
-      router.replace('/dashboard');
-    } else if (status === 'unauthenticated') {
-      router.replace('/login');
     }
-  }, [status, router]);
+  }, [user, isLoading, router]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
@@ -40,3 +26,4 @@ export default function Home() {
     </main>
   );
 }
+

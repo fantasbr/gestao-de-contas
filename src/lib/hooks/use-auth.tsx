@@ -82,11 +82,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    // Timeout de segurança: se demorar mais de 10s, libera o loading
+    const timeoutId = setTimeout(() => {
+      if (mounted) {
+        console.warn('[Auth] Timeout: Supabase não respondeu em 10s');
+        setIsLoading(false);
+      }
+    }, 10000);
+
     const inicializar = async () => {
       if (!mounted) return;
       await loadUser(true); // Carga rápida sem perfil
       
       if (mounted) {
+        clearTimeout(timeoutId); // Supabase respondeu, cancela o timeout
         // Busca o perfil em segundo plano após a renderização inicial
         setTimeout(() => {
           if (mounted) loadUser(false);
@@ -122,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, [supabase, loadUser]);

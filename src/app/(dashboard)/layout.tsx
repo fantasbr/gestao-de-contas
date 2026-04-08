@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useEffect } from 'react';
+import { useAuth } from '@/lib/hooks';
 import { Sidebar } from '@/components/layout';
 import { Loader2 } from 'lucide-react';
 
@@ -12,24 +12,26 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const supabase = createClient();
-  const [isChecking, setIsChecking] = useState(true);
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        router.push('/login');
-      } else {
-        setIsChecking(false);
-      }
-    };
+    // Só redireciona quando AuthProvider terminou de carregar e não há user
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [isLoading, user, router]);
 
-    checkAuth();
-  }, [router, supabase]);
+  // Enquanto AuthProvider ainda está carregando, mostra spinner
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-  if (isChecking) {
+  // Se não tem user e não está loading, aguarda o redirect
+  if (!user) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

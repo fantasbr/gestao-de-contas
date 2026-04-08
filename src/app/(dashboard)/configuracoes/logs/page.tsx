@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { Header } from '@/components/layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +25,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-export default function LogsPage() {
+function LogsContent() {
   const { logs, listarLogs, listarWebhooks, webhooks, isLoading } = useWebhooks();
 
   const [filtros, setFiltros] = useState({
@@ -188,5 +188,18 @@ export default function LogsPage() {
         )}
       </div>
     </>
+  );
+}
+
+export default function LogsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col h-screen w-full items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <p className="mt-4 text-muted-foreground">Carregando Logs...</p>
+      </div>
+    }>
+      <LogsContent />
+    </Suspense>
   );
 }

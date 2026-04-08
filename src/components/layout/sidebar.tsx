@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/hooks';
 import {
   LayoutDashboard,
   Receipt,
@@ -15,7 +15,6 @@ import {
   LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
 
 const menuItems = [
   {
@@ -65,43 +64,17 @@ const menuItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
-  const [userInfo, setUserInfo] = useState<{ nome: string | null; email: string | null; role: string | null } | null>(null);
+  const { user, signOut } = useAuth();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        // Buscar role do metadata primeiro (mais rápido)
-        const role = session.user.user_metadata?.role || null;
-        const nome = session.user.user_metadata?.nome || session.user.email?.split('@')[0] || null;
-        setUserInfo({
-          nome,
-          email: session.user.email ?? null,
-          role,
-        });
-
-        // Tentar buscar perfil em background (não bloquear)
-        const { data: perfil } = await supabase
-          .from('perfis_usuarios')
-          .select('role, nome')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (perfil) {
-          setUserInfo(prev => prev ? { ...prev, role: perfil.role, nome: perfil.nome || prev.nome } : null);
-        }
-      }
-    };
-    loadUser();
-  }, [supabase]);
+  const userRole = user?.role || '';
+  const userName = user?.nome || user?.email || '';
 
   const filteredMenu = menuItems.filter(
-    (item) => userInfo && item.roles.includes(userInfo.role || '')
+    (item) => item.roles.includes(userRole)
   );
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     router.push('/login');
   };
 
@@ -141,10 +114,10 @@ export function Sidebar() {
         <div className="flex items-center gap-3 px-3 py-2">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">
-              {userInfo?.nome || userInfo?.email}
+              {userName}
             </p>
             <p className="text-xs text-muted-foreground capitalize">
-              {userInfo?.role || 'Carregando...'}
+              {userRole || 'Carregando...'}
             </p>
           </div>
         </div>
@@ -160,3 +133,4 @@ export function Sidebar() {
     </aside>
   );
 }
+
