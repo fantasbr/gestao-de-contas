@@ -13,8 +13,7 @@ export function Header() {
   const handleLogout = async () => {
     await signOut();
     toast.success('Você foi desconectado');
-    router.push('/login');
-    router.refresh();
+    window.location.href = '/login';
   };
 
   return (
