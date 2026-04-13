@@ -890,7 +890,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - ✅ Configuração Docker Swarm com Secrets
 - ✅ Dockerfile multi-stage otimizado
 - ✅ Scripts de deploy e backup
-- ✅ Proxy reverso Nginx com rate limiting
+- ✅ Proxy reverso Traefik com rate limiting
 - ✅ Healthchecks e auto-scaling configurado
 
 ### Versão 1.2 (Janeiro 2025)

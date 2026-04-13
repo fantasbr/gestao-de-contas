@@ -476,7 +476,6 @@ CREATE TRIGGER trigger_vencido
 | `scripts/backup.sh` | Script de backup |
 | `scripts/load-secrets.js` | Carregador de secrets |
 | `secrets/` | Diretório para secrets |
-| `nginx/nginx.conf` | Proxy reverso com rate limiting |
 | `.dockerignore` | Otimização de build |
 
 ### 12.2 Configuração de Secrets
@@ -513,7 +512,7 @@ nano *.txt
 - ✅ Usuário não-root no container
 - ✅ Secrets via Docker Secrets (não em variáveis de ambiente)
 - ✅ Healthchecks configurados
-- ✅ Rate limiting no Nginx
+- ✅ Rate limiting no Traefik
 - ✅ Headers de segurança
 - ✅ Isolamento de redes (frontend/backend)
 

@@ -29,7 +29,6 @@ tar -czf $BACKUP_DIR/${PROJECT_NAME}_config_${DATE}.tar.gz \
     docker-compose.yml \
     docker-compose.prod.yml \
     Dockerfile \
-    nginx/nginx.conf \
     .env.swarm 2>/dev/null || true
 
 # Listar backups

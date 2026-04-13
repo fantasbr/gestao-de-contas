@@ -1,5 +1,6 @@
-'use client'; // Error components must be Client Components
+'use client';
 
+// Error components must be Client Components
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
@@ -13,8 +14,8 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Aqui você pode logar o erro para um serviço como o Sentry
-    console.error(error);
+    // Log error for debugging
+    console.error('Application error:', error);
   }, [error]);
 
   return (
@@ -24,7 +25,7 @@ export default function Error({
       </div>
       <h2 className="text-3xl font-bold tracking-tight">Ops! Algo deu errado</h2>
       <p className="text-muted-foreground max-w-[500px]">
-        Ocorreu um erro inesperado na aplicação. Já fomos notificados, mas você pode tentar novamente.
+        {error.message || 'Ocorreu um erro inesperado na aplicação.'}
       </p>
       <div className="mt-4 flex gap-4">
         <Button onClick={() => reset()} variant="default">

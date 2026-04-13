@@ -1,6 +1,6 @@
 {
   "name": "contas",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "node scripts/load-secrets.js && next start",
     "start:docker": "node scripts/load-secrets.js && node server.js",
-    "docker:build": "docker build -t contas-app:latest .",
+    "docker:build": "docker build -t angelomoreirafilho/gestao-contas:0.1.5 .",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f app",
@@ -30,6 +30,7 @@
     "@radix-ui/react-tabs": "^1.1.3",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.47.10",
+    "autoprefixer": "^10.4.27",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -42,18 +43,17 @@
     "recharts": "^3.0.0",
     "sonner": "^2.0.1",
     "tailwind-merge": "^2.6.0",
+    "tailwindcss": "^3.4.19",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
-    "@tailwindcss/postcss": "^4.1.3",
     "@types/node": "^22.14.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "eslint": "^9.24.0",
     "eslint-config-next": "16.2.1",
-    "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.3",
+    "postcss": "^8.5.9",
     "typescript": "^5.8.3"
   }
 }

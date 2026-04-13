@@ -1,0 +1,1 @@
+export { CategoriasClient } from './CategoriasClient';

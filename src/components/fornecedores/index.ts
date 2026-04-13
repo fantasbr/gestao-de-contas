@@ -1,0 +1,1 @@
+export { FornecedoresClient } from './FornecedoresClient';

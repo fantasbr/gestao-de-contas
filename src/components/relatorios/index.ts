@@ -1,0 +1,1 @@
+export { RelatoriosClient } from './RelatoriosClient';

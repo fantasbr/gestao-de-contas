@@ -1,0 +1,1 @@
+export { ConfiguracoesClient } from './ConfiguracoesClient';

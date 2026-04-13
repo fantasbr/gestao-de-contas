@@ -181,7 +181,7 @@ nano *.txt
 Consulte [DOCKER.md](./DOCKER.md) para instruções completas de:
 - Configuração de Docker Secrets
 - Deploy em produção
-- Nginx como proxy reverso
+- Traefik como proxy reverso
 - Monitoring e troubleshooting
 
 ## Permissões por Role
