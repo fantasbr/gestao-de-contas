@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import type { AppWebhook, WebhookLog } from '@/types';
 
 export function useWebhooks() {
@@ -10,22 +9,19 @@ export function useWebhooks() {
   const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
 
   const listarWebhooks = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const { data, error } = await supabase
-        .from('app_webhooks')
-        .select('*')
-        .order('nome_evento');
+      const response = await fetch('/api/webhooks');
+      const result = await response.json();
+      
+      if (result.error) throw new Error(result.error);
 
-      if (error) throw error;
-
-      setWebhooks(data || []);
-      return data;
+      setWebhooks(result.data || []);
+      return result.data;
     } catch (err: any) {
       setError(err.message);
       return [];
@@ -34,20 +30,21 @@ export function useWebhooks() {
     }
   }, []);
 
-  const criarWebhook = useCallback(async (webhook: Partial<AppWebhook>) => {
+  const criarWebhook = useCallback(async (webhookData: Partial<AppWebhook>) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const { data, error } = await supabase
-        .from('app_webhooks')
-        .insert(webhook)
-        .select()
-        .single();
+      const response = await fetch('/api/webhooks/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(webhookData),
+      });
+      const result = await response.json();
+      
+      if (result.error) throw new Error(result.error);
 
-      if (error) throw error;
-
-      return data;
+      return result.data;
     } catch (err: any) {
       setError(err.message);
       return null;
@@ -61,16 +58,16 @@ export function useWebhooks() {
     setError(null);
 
     try {
-      const { data, error } = await supabase
-        .from('app_webhooks')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+      const response = await fetch(`/api/webhooks/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      const result = await response.json();
+      
+      if (result.error) throw new Error(result.error);
 
-      if (error) throw error;
-
-      return data;
+      return result.data;
     } catch (err: any) {
       setError(err.message);
       return null;
@@ -84,12 +81,12 @@ export function useWebhooks() {
     setError(null);
 
     try {
-      const { error } = await supabase
-        .from('app_webhooks')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      const response = await fetch(`/api/webhooks/${id}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+      
+      if (result.error) throw new Error(result.error);
 
       return true;
     } catch (err: any) {
@@ -112,34 +109,21 @@ export function useWebhooks() {
     setError(null);
 
     try {
-      let query = supabase
-        .from('webhooks_log')
-        .select('*, webhook:app_webhooks(nome_evento)', { count: 'exact' })
-        .order('criado_em', { ascending: false });
+      const params = new URLSearchParams();
+      if (filtros.webhook_id) params.set('webhook_id', filtros.webhook_id);
+      if (filtros.status) params.set('status', filtros.status);
+      if (filtros.data_inicio) params.set('data_inicio', filtros.data_inicio);
+      if (filtros.data_fim) params.set('data_fim', filtros.data_fim);
+      params.set('page', String(filtros.page || 1));
+      params.set('limit', String(filtros.limit || 25));
 
-      if (filtros.webhook_id) {
-        query = query.eq('webhook_id', filtros.webhook_id);
-      }
-      if (filtros.status) {
-        query = query.eq('status', filtros.status);
-      }
-      if (filtros.data_inicio) {
-        query = query.gte('criado_em', filtros.data_inicio);
-      }
-      if (filtros.data_fim) {
-        query = query.lte('criado_em', filtros.data_fim);
-      }
+      const response = await fetch(`/api/webhooks/logs?${params}`);
+      const result = await response.json();
+      
+      if (result.error) throw new Error(result.error);
 
-      const page = filtros.page || 1;
-      const limit = filtros.limit || 25;
-      query = query.range((page - 1) * limit, page * limit - 1);
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      setLogs(data || []);
-      return data;
+      setLogs(result.data || []);
+      return result.data;
     } catch (err: any) {
       setError(err.message);
       return [];

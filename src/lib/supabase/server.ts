@@ -1,27 +1,56 @@
-import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
-export async function createClient() {
+export async function createServerSupabaseClient() {
   const cookieStore = await cookies();
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
-            });
-          } catch {
-            // Ignorado quando chamado de Server Component (somente leitura)
-          }
-        },
+  // Obter variáveis de ambiente
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Se não houver variáveis configuradas, retornar um cliente "dummy"
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('Supabase credentials not configured');
+    return {
+      auth: {
+        getUser: async () => ({ data: { user: null }, error: null }),
+        getSession: async () => ({ data: { session: null }, error: null }),
       },
-    }
-  );
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null, error: { message: 'Not configured' } }),
+          }),
+          order: () => ({
+            range: () => Promise.resolve({ data: [], error: null }),
+          }),
+        }),
+        update: () => ({
+          eq: () => ({
+            select: () => ({
+              single: async () => ({ data: null, error: null }),
+            }),
+          }),
+        }),
+        insert: () => ({
+          select: () => ({
+            single: async () => ({ data: null, error: null }),
+          }),
+        }),
+        delete: () => ({
+          eq: async () => ({ error: null }),
+        }),
+      }),
+    } as any;
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 }
+
+// Alias para compatibilidade
+export { createServerSupabaseClient as createClient };

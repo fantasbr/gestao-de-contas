@@ -27,7 +27,13 @@ RUN npm ci
 FROM base AS builder
 WORKDIR /app
 
+# Copiar .env.production primeiro (será renomeado para .env.local)
+COPY .env.production .env.local
+
+# Copiar node_modules do stage deps
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copiar código fonte
 COPY . .
 
 # Receber variáveis em tempo de BUILD (necessárias para as envs NEXT_PUBLIC_ serem embutidas)

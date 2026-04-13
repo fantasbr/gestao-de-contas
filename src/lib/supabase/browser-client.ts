@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Criar cliente Supabase para uso no browser
+// Criar cliente Supabase sem SSR para uso no browser
 let client: ReturnType<typeof createClient> | null = null;
 
 export function getSupabaseBrowserClient() {
@@ -9,9 +9,8 @@ export function getSupabaseBrowserClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Se não houver variáveis configuradas, retornar null
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase credentials not configured');
+    console.warn('Supabase credentials not found');
     return null;
   }
 
@@ -19,5 +18,6 @@ export function getSupabaseBrowserClient() {
   return client;
 }
 
-// Alias para compatibilidade
-export { getSupabaseBrowserClient as createClient };
+export function createClient() {
+  return getSupabaseBrowserClient();
+}

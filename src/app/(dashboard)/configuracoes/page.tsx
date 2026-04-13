@@ -4,8 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { ConfiguracoesClient } from '@/components/configuracoes';
 
-// Cache de 60 segundos
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export default async function ConfiguracoesPage() {
   const supabase = await createClient();

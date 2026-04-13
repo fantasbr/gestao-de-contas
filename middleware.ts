@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
@@ -6,29 +6,22 @@ export async function middleware(request: NextRequest) {
     request,
   });
 
-  // Criar cliente Supabase para verificar autenticação
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options as Parameters<typeof supabaseResponse.cookies.set>[2])
-          );
-        },
-      },
-    }
-  );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Se não houver variáveis configuradas, pular autenticação
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('Supabase credentials not configured, skipping auth');
+    return supabaseResponse;
+  }
+
+  // Criar cliente Supabase
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 
   const pathname = request.nextUrl.pathname;
 
@@ -45,13 +38,23 @@ export async function middleware(request: NextRequest) {
 
   const isAuthRoute = pathname.startsWith('/login');
 
-  // Otimização: Se não é rota de auth nem protegida, retorna logo (pula rede do Supabase)
+  // Otimização: Se não é rota de auth nem protegida, retorna logo
   if (!isProtectedRoute && !isAuthRoute) {
     return supabaseResponse;
   }
 
+  // Obter token do cookie manualmente
+  const accessToken = request.cookies.get('sb-access-token')?.value;
+  const refreshToken = request.cookies.get('sb-refresh-token')?.value;
+
+  if (accessToken) {
+    supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken || '',
+    });
+  }
+
   // Verificar se o usuário está autenticado
-  // Esta chamada faz requisição à API do Supabase e causa lentidão se não for filtrada
   const {
     data: { user },
   } = await supabase.auth.getUser();

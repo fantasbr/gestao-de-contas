@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import type { Fornecedor, Empresa, Categoria } from '@/types';
 
 // Cache global para dados de lookup
@@ -24,7 +23,6 @@ export function useLookupData() {
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
 
   const loadAll = useCallback(async () => {
     // Verificar se há cache válido
@@ -45,28 +43,24 @@ export function useLookupData() {
     setIsLoading(true);
     
     try {
-      // Carregar tudo em PARALELO
-      const [fornsResult, empsResult, catsResult] = await Promise.all([
-        supabase.from('fornecedores').select('*').is('deleted_at', null).order('nome'),
-        supabase.from('empresas').select('*').order('nome'),
-        supabase.from('categorias').select('*').order('nome'),
-      ]);
+      const response = await fetch('/api/lookup-data');
+      const result = await response.json();
+      
+      if (result.data) {
+        const { fornecedores, empresas, categorias } = result.data;
+        
+        // Atualizar cache
+        lookupCache = {
+          fornecedores,
+          empresas,
+          categorias,
+          timestamp: now,
+        };
 
-      const forns = fornsResult.data || [];
-      const emps = empsResult.data || [];
-      const cats = catsResult.data || [];
-
-      // Atualizar cache
-      lookupCache = {
-        fornecedores: forns,
-        empresas: emps,
-        categorias: cats,
-        timestamp: now,
-      };
-
-      setFornecedores(forns);
-      setEmpresas(emps);
-      setCategorias(cats);
+        setFornecedores(fornecedores);
+        setEmpresas(empresas);
+        setCategorias(categorias);
+      }
     } catch (error) {
       console.error('Erro ao carregar dados de lookup:', error);
     } finally {

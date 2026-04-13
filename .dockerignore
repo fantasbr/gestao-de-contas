@@ -36,7 +36,7 @@ Thumbs.db
 .env.*
 !.env.example
 !.env.swarm
-!.env.local
+!.env.production
 
 # Secrets (não devem ser incluídos na imagem)
 secrets
