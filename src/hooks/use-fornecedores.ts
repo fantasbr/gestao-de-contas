@@ -21,6 +21,7 @@ export function useFornecedores() {
     setError(null);
 
     try {
+      if (!supabase) throw new Error('Supabase client not available');
       let query = supabase
         .from('fornecedores')
         .select('*', { count: 'exact' })
@@ -53,6 +54,7 @@ export function useFornecedores() {
     setError(null);
 
     try {
+      if (!supabase) throw new Error('Supabase client not available');
       const { data, error } = await supabase
         .from('fornecedores')
         .select('*')
@@ -77,6 +79,7 @@ export function useFornecedores() {
     setError(null);
 
     try {
+      if (!supabase) throw new Error('Supabase client not available');
       const { data: { user } } = await supabase.auth.getUser();
 
       const { data, error } = await supabase
@@ -101,6 +104,7 @@ export function useFornecedores() {
     setError(null);
 
     try {
+      if (!supabase) throw new Error('Supabase client not available');
       const { data, error } = await supabase
         .from('fornecedores')
         .update(updates)
@@ -124,6 +128,7 @@ export function useFornecedores() {
     setError(null);
 
     try {
+      if (!supabase) throw new Error('Supabase client not available');
       const { error } = await supabase
         .from('fornecedores')
         .update({ deleted_at: new Date().toISOString() })
@@ -164,6 +169,7 @@ export function useEmpresas() {
     setError(null);
 
     try {
+      if (!supabase) throw new Error('Supabase client not available');
       const { data, error } = await supabase
         .from('empresas')
         .select('*')
@@ -195,6 +201,7 @@ export function useCategorias() {
     setError(null);
 
     try {
+      if (!supabase) throw new Error('Supabase client not available');
       const { data, error } = await supabase
         .from('categorias')
         .select('*')
@@ -214,6 +221,7 @@ export function useCategorias() {
 
   const criarCategoria = useCallback(async (categoria: CategoriaInsert) => {
     try {
+      if (!supabase) throw new Error('Supabase client not available');
       const { data: { user } } = await supabase.auth.getUser();
 
       const { data, error } = await supabase
@@ -233,6 +241,7 @@ export function useCategorias() {
 
   const atualizarCategoria = useCallback(async (id: string, updates: CategoriaUpdate) => {
     try {
+      if (!supabase) throw new Error('Supabase client not available');
       const { data, error } = await supabase
         .from('categorias')
         .update(updates)
@@ -251,6 +260,7 @@ export function useCategorias() {
 
   const excluirCategoria = useCallback(async (id: string) => {
     try {
+      if (!supabase) throw new Error('Supabase client not available');
       const { error } = await supabase
         .from('categorias')
         .delete()

@@ -1,5 +1,7 @@
-// Página temporariamente desabilitada para build Docker
-// A funcionalidade está disponível via API: /api/webhooks/logs
+// Força renderização dinâmica — evita pré-renderização no build do Docker
+// onde as variáveis NEXT_PUBLIC_SUPABASE_* ainda não estão disponíveis
+export const dynamic = 'force-dynamic';
+
 
 export default function LogsPage() {
   return (

@@ -4,10 +4,6 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { createClient } from '@/lib/supabase/client';
 import type { PerfilUsuario } from '@/types';
 
-// Singleton fora do componente para garantir uma única instância
-// mesmo em StrictMode e hot-reload de produção
-const supabase = createClient();
-
 interface AuthUser {
   id: string;
   email: string;
@@ -31,8 +27,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
 
+  // useRef garante referência estável ao cliente Supabase:
+  // - Não recria o cliente a cada render (evita re-subscribe no onAuthStateChange)
+  // - client.ts retorna null no servidor (build time) para evitar erros com envs vazias
+  // - No browser, sempre retorna o cliente real
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
+
   useEffect(() => {
     mountedRef.current = true;
+
+    // Não inicia subscrição se executando no servidor durante build
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -96,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []); // supabase é singleton — array vazio é intencional
 
   const signIn = async (email: string, password: string) => {
+    if (!supabase) return { error: new Error('Cliente Supabase não disponível') };
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -104,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    if (!supabase) return;
     try {
       // scope:'global' invalida a sessão no servidor Supabase,
       // garantindo que o cookie SSR seja rejeitado mesmo antes de expirar
@@ -128,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshUser = async () => {
-    if (!user?.id) return;
+    if (!supabase || !user?.id) return;
     setIsLoading(true);
     try {
       const { data: perfil } = await supabase
