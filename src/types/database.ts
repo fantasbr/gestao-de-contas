@@ -35,6 +35,7 @@ export interface Database {
           role?: RoleUsuario | null;
           nome?: string | null;
         };
+        Relationships: [];
       };
 
       empresas: {
@@ -53,6 +54,7 @@ export interface Database {
           nome?: string;
           cnpj?: string;
         };
+        Relationships: [];
       };
 
       categorias: {
@@ -74,6 +76,7 @@ export interface Database {
           nome?: string;
           cor?: string | null;
         };
+        Relationships: [];
       };
 
       fornecedores: {
@@ -125,7 +128,31 @@ export interface Database {
           chave_pix?: string | null;
           tipo_pix?: TipoPix | null;
           observacoes?: string | null;
+          deleted_at?: string | null;
         };
+        Relationships: [];
+      };
+
+      fornecedores_log: {
+        Row: {
+          id: string;
+          fornecedor_id: string;
+          acao: string;
+          dados_anteriores: Json | null;
+          dados_novos: Json | null;
+          realizado_por: string | null;
+          realizado_em: string | null;
+        };
+        Insert: {
+          id?: string;
+          fornecedor_id: string;
+          acao: string;
+          dados_anteriores?: Json | null;
+          dados_novos?: Json | null;
+          realizado_por?: string | null;
+        };
+        Update: {};
+        Relationships: [];
       };
 
       contas_pagar: {
@@ -220,6 +247,7 @@ export interface Database {
           webhook_id_envio?: string | null;
           deleted_at?: string | null;
         };
+        Relationships: [];
       };
 
       app_webhooks: {
@@ -244,6 +272,7 @@ export interface Database {
           ativo?: boolean | null;
           descricao?: string | null;
         };
+        Relationships: [];
       };
 
       api_configuracoes: {
@@ -258,6 +287,7 @@ export interface Database {
         Update: {
           api_token?: string | null;
         };
+        Relationships: [];
       };
 
       webhooks_log: {
@@ -294,6 +324,7 @@ export interface Database {
           tempo_resposta_ms?: number | null;
           tentativa?: number;
         };
+        Relationships: [];
       };
 
       contas_log: {
@@ -314,7 +345,8 @@ export interface Database {
           dados_novos?: Json | null;
           realizado_por?: string | null;
         };
-        Update: never;
+        Update: {};
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
@@ -331,6 +363,7 @@ export type PerfilUsuario = Database['public']['Tables']['perfis_usuarios']['Row
 export type Empresa = Database['public']['Tables']['empresas']['Row'];
 export type Categoria = Database['public']['Tables']['categorias']['Row'];
 export type Fornecedor = Database['public']['Tables']['fornecedores']['Row'];
+export type FornecedorLog = Database['public']['Tables']['fornecedores_log']['Row'];
 export type ContaPagar = Database['public']['Tables']['contas_pagar']['Row'];
 export type AppWebhook = Database['public']['Tables']['app_webhooks']['Row'];
 export type ApiConfiguracao = Database['public']['Tables']['api_configuracoes']['Row'];

@@ -74,16 +74,16 @@ interface Conta {
 }
 
 interface ContaDetailClientProps {
-  conta: Conta;
-  podeEditar: boolean;
-  podeExcluir: boolean;
+  conta?: Conta | null;
+  podeEditar?: boolean;
+  podeExcluir?: boolean;
   conferidoPorNome?: string | null;
 }
 
 export function ContaDetailClient({
   conta,
-  podeEditar,
-  podeExcluir,
+  podeEditar = false,
+  podeExcluir = false,
   conferidoPorNome,
 }: ContaDetailClientProps) {
   const router = useRouter();
@@ -94,6 +94,21 @@ export function ContaDetailClient({
   const [dataPagamento, setDataPagamento] = useState(new Date().toISOString().split('T')[0]);
   const [comprovante, setComprovante] = useState<File | null>(null);
   const [pagarLoading, setPagarLoading] = useState(false);
+
+  if (!conta) {
+    return (
+      <>
+        <Header />
+        <div className="flex-1 p-6 overflow-auto">
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              Conta nÃ£o encontrada.
+            </CardContent>
+          </Card>
+        </div>
+      </>
+    );
+  }
 
   const handleConferir = async () => {
     const result = await marcarConferido(conta.id, observacao);

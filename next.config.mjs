@@ -22,10 +22,6 @@ const nextConfig = {
   output: 'standalone',
 
   // Desabilitar verificação de tipos para builds mais rápidos
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-
   // Evitar erros de prerender
   experimental: {
     optimizePackageImports: ['@supabase/supabase-js'],

@@ -35,7 +35,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const supabase = await createClient();
   const body = await request.json();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+  }
 
   // Buscar dados anteriores
   const { data: anterior } = await supabase
@@ -61,7 +66,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     acao: 'editado',
     dados_anteriores: anterior,
     dados_novos: data,
-    realizado_por: user?.id,
+    realizado_por: user.id,
   });
 
   return NextResponse.json(data);
@@ -72,13 +77,18 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+  }
 
   // Verificar se é admin
   const { data: perfil } = await supabase
     .from('perfis_usuarios')
     .select('role')
-    .eq('id', user?.id)
+    .eq('id', user.id)
     .single();
 
   if (perfil?.role !== 'admin') {
@@ -98,7 +108,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   await supabase.from('contas_log').insert({
     conta_id: id,
     acao: 'excluido',
-    realizado_por: user?.id,
+    realizado_por: user.id,
   });
 
   return NextResponse.json({ success: true });

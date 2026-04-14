@@ -1,14 +1,15 @@
 {
   "name": "contas",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
+    "dev:turbopack": "next dev",
     "dev:webpack": "next dev --webpack",
     "build": "next build",
     "start": "node scripts/load-secrets.js && next start",
     "start:docker": "node scripts/load-secrets.js && node server.js",
-    "docker:build": "docker build -t angelomoreirafilho/gestao-contas:0.1.5 .",
+    "docker:build": "docker build -t angelomoreirafilho/gestao-contas:0.1.6 .",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f app",

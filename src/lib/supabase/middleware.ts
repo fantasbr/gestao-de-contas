@@ -1,36 +1,51 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getSupabasePublicEnv } from '@/lib/supabase/env';
+import type { Database } from '@/types';
 
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
+export interface SessionUpdateResult {
+  cookiesToSet: CookieToSet[];
+  response: NextResponse;
+  user: User | null;
+}
+
+export async function updateSession(request: NextRequest): Promise<SessionUpdateResult> {
+  let supabaseResponse = NextResponse.next({ request });
+  const env = getSupabasePublicEnv();
+
+  if (!env) {
+    return { cookiesToSet: [], response: supabaseResponse, user: null };
+  }
+
+  let cookiesToSet: CookieToSet[] = [];
+
+  const supabase = createServerClient<Database, 'public'>(env.url, env.anonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
       },
-    }
-  );
+      setAll(nextCookies: CookieToSet[]) {
+        cookiesToSet = nextCookies;
 
-  // Refresh session se expirada
-  await supabase.auth.getUser();
+        nextCookies.forEach(({ name, value }) => {
+          request.cookies.set(name, value);
+        });
 
-  return supabaseResponse;
+        supabaseResponse = NextResponse.next({ request });
+
+        nextCookies.forEach(({ name, value, options }) => {
+          supabaseResponse.cookies.set(name, value, options);
+        });
+      },
+    },
+  }) as unknown as SupabaseClient<Database, 'public', 'public', Database['public']>;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return { cookiesToSet, response: supabaseResponse, user };
 }

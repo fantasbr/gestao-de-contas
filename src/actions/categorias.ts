@@ -15,7 +15,7 @@ export interface CategoriaInput {
   permite_quaisquer?: boolean; // Allow any value (free typing)
 }
 
-export interface ActionResult<T = void> {
+export interface ActionResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;

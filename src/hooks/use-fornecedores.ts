@@ -2,7 +2,12 @@
 
 import { useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { Fornecedor, Empresa, Categoria } from '@/types';
+import type { Fornecedor, Empresa, Categoria, Database } from '@/types';
+
+type FornecedorInsert = Database['public']['Tables']['fornecedores']['Insert'];
+type FornecedorUpdate = Database['public']['Tables']['fornecedores']['Update'];
+type CategoriaInsert = Database['public']['Tables']['categorias']['Insert'];
+type CategoriaUpdate = Database['public']['Tables']['categorias']['Update'];
 
 export function useFornecedores() {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
@@ -67,7 +72,7 @@ export function useFornecedores() {
     }
   }, []);
 
-  const criarFornecedor = useCallback(async (fornecedor: Partial<Fornecedor>) => {
+  const criarFornecedor = useCallback(async (fornecedor: FornecedorInsert) => {
     setIsLoading(true);
     setError(null);
 
@@ -76,7 +81,7 @@ export function useFornecedores() {
 
       const { data, error } = await supabase
         .from('fornecedores')
-        .insert({ ...fornecedor, created_by: user?.id })
+        .insert({ ...fornecedor, created_by: user?.id ?? null })
         .select()
         .single();
 
@@ -91,7 +96,7 @@ export function useFornecedores() {
     }
   }, []);
 
-  const atualizarFornecedor = useCallback(async (id: string, updates: Partial<Fornecedor>) => {
+  const atualizarFornecedor = useCallback(async (id: string, updates: FornecedorUpdate) => {
     setIsLoading(true);
     setError(null);
 
@@ -207,13 +212,13 @@ export function useCategorias() {
     }
   }, []);
 
-  const criarCategoria = useCallback(async (categoria: Partial<Categoria>) => {
+  const criarCategoria = useCallback(async (categoria: CategoriaInsert) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
       const { data, error } = await supabase
         .from('categorias')
-        .insert({ ...categoria, created_by: user?.id })
+        .insert({ ...categoria, created_by: user?.id ?? null })
         .select()
         .single();
 
@@ -226,7 +231,7 @@ export function useCategorias() {
     }
   }, []);
 
-  const atualizarCategoria = useCallback(async (id: string, updates: Partial<Categoria>) => {
+  const atualizarCategoria = useCallback(async (id: string, updates: CategoriaUpdate) => {
     try {
       const { data, error } = await supabase
         .from('categorias')

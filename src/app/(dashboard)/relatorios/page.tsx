@@ -12,7 +12,7 @@ export default async function RelatoriosPage() {
   return (
     <RelatoriosClient
       initialContas={contasResult.data || []}
-      initialFornecedores={fornecedoresResult.data || []}
+      fornecedores={fornecedoresResult.data || []}
     />
   );
 }

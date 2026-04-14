@@ -27,9 +27,7 @@ RUN npm ci
 FROM base AS builder
 WORKDIR /app
 
-# Copiar .env.production primeiro (será renomeado para .env.local)
-COPY .env.production .env.local
-
+# NÃO copiar .env.production - as variáveis são passadas via BUILD ARG e ARG devem vir ANTES de ENV
 # Copiar node_modules do stage deps
 COPY --from=deps /app/node_modules ./node_modules
 
@@ -41,6 +39,7 @@ ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_APP_URL
 
+# Definir variáveis de ambiente (serão embutidas no build)
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL

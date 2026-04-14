@@ -1,23 +1,19 @@
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { getSupabasePublicEnvOrThrow } from '@/lib/supabase/env';
+import type { Database } from '@/types';
 
-// Criar cliente Supabase para uso no browser
-let client: ReturnType<typeof createClient> | null = null;
+type BrowserSupabaseClient = SupabaseClient<Database, 'public', 'public', Database['public']>;
 
-export function getSupabaseBrowserClient() {
+let client: BrowserSupabaseClient | null = null;
+
+export function getSupabaseBrowserClient(): BrowserSupabaseClient {
   if (client) return client;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const { url, anonKey } = getSupabasePublicEnvOrThrow('supabase/client');
+  client = createBrowserClient<Database, 'public'>(url, anonKey) as unknown as BrowserSupabaseClient;
 
-  // Se não houver variáveis configuradas, retornar null
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase credentials not configured');
-    return null;
-  }
-
-  client = createClient(supabaseUrl, supabaseAnonKey);
   return client;
 }
 
-// Alias para compatibilidade
 export { getSupabaseBrowserClient as createClient };

@@ -1,56 +1,32 @@
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { getSupabasePublicEnvOrThrow } from '@/lib/supabase/env';
+import type { Database } from '@/types';
 
-export async function createServerSupabaseClient() {
+type ServerSupabaseClient = SupabaseClient<Database, 'public', 'public', Database['public']>;
+type CookieToSet = { name: string; value: string; options?: CookieOptions };
+
+export async function createServerSupabaseClient(): Promise<ServerSupabaseClient> {
   const cookieStore = await cookies();
+  const { url, anonKey } = getSupabasePublicEnvOrThrow('supabase/server');
 
-  // Obter variáveis de ambiente
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  // Se não houver variáveis configuradas, retornar um cliente "dummy"
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase credentials not configured');
-    return {
-      auth: {
-        getUser: async () => ({ data: { user: null }, error: null }),
-        getSession: async () => ({ data: { session: null }, error: null }),
+  return createServerClient<Database, 'public'>(url, anonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
       },
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            single: async () => ({ data: null, error: { message: 'Not configured' } }),
-          }),
-          order: () => ({
-            range: () => Promise.resolve({ data: [], error: null }),
-          }),
-        }),
-        update: () => ({
-          eq: () => ({
-            select: () => ({
-              single: async () => ({ data: null, error: null }),
-            }),
-          }),
-        }),
-        insert: () => ({
-          select: () => ({
-            single: async () => ({ data: null, error: null }),
-          }),
-        }),
-        delete: () => ({
-          eq: async () => ({ error: null }),
-        }),
-      }),
-    } as any;
-  }
-
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
+      setAll(cookiesToSet: CookieToSet[]) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        } catch {
+          // Server Components cannot always mutate cookies; middleware handles refresh writes.
+        }
+      },
     },
-  });
+  }) as unknown as ServerSupabaseClient;
 }
 
-// Alias para compatibilidade
 export { createServerSupabaseClient as createClient };

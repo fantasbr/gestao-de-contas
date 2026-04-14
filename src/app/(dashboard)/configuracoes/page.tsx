@@ -17,12 +17,17 @@ export default async function ConfiguracoesPage() {
 
   // Verificar se tem token configurado
   const { data: config } = await supabase
-    .from('configuracoes')
+    .from('api_configuracoes')
     .select('api_token')
-    .eq('chave', 'n8n_token')
+    .eq('id', 1)
     .single();
 
   const hasToken = !!config?.api_token;
+  const normalizedWebhooks = (webhooks || []).map((webhook) => ({
+    ...webhook,
+    ativo: !!webhook.ativo,
+    descricao: webhook.descricao || undefined,
+  }));
 
-  return <ConfiguracoesClient initialWebhooks={webhooks || []} hasToken={hasToken} />;
+  return <ConfiguracoesClient initialWebhooks={normalizedWebhooks} hasToken={hasToken} />;
 }

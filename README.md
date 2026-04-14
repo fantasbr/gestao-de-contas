@@ -41,7 +41,6 @@ Edite o arquivo `.env.local` com suas credenciais:
 # Supabase (obrigatório)
 NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anonima
-SUPABASE_SERVICE_ROLE_KEY=sua-chave-de-servico
 
 # AWS S3 (opcional, para upload de arquivos)
 AWS_ACCESS_KEY_ID=sua-access-key
@@ -59,7 +58,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 |----------|-----------|-------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto Supabase | ✅ |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave pública do Supabase | ✅ |
-| `SUPABASE_SERVICE_ROLE_KEY` | Chave de serviço (server-side) | ✅ |
+| `SUPABASE_SERVICE_ROLE_KEY` | Chave privada server-side; use apenas via secret do host/CI | Somente se o backend realmente consumir |
 | `AWS_ACCESS_KEY_ID` | Chave de acesso AWS | Opcional |
 | `AWS_SECRET_ACCESS_KEY` | Chave secreta AWS | Opcional |
 | `AWS_REGION` | Região do S3 (ex: us-east-1) | Opcional |

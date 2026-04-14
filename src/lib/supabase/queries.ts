@@ -199,7 +199,9 @@ export async function queryEstatisticas(): Promise<QueryResult<Estatisticas>> {
     ]);
 
     // Calcular soma no cliente
-    const totalValor = valorResult.data?.reduce((acc, curr) => acc + Number(curr.valor || 0), 0) || 0;
+    const totalValor =
+      valorResult.data?.reduce((acc: number, curr: { valor: number | null }) => acc + Number(curr.valor || 0), 0) ||
+      0;
 
     return {
       data: {

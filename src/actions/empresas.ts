@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export interface EmpresaInput {
   nome: string;
+  cnpj?: string;
   documento?: string;
   tipo_documento?: 'CNPJ' | 'CPF';
   endereco?: string;
@@ -20,7 +21,7 @@ export interface EmpresaInput {
   logo_url?: string;
 }
 
-export interface ActionResult<T = void> {
+export interface ActionResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -70,7 +71,19 @@ export async function criarEmpresa(formData: FormData): Promise<ActionResult> {
     return { success: false, error: 'Nome é obrigatório' };
   }
 
-  const { data: empresa, error } = await supabase.from('empresas').insert(data).select().single();
+  const cnpj = data.cnpj || data.documento;
+  if (!cnpj) {
+    return { success: false, error: 'CNPJ é obrigatório' };
+  }
+
+  const { data: empresa, error } = await supabase
+    .from('empresas')
+    .insert({
+      nome: data.nome,
+      cnpj,
+    })
+    .select()
+    .single();
 
   if (error) {
     console.error('Erro ao criar empresa:', error);
@@ -95,10 +108,20 @@ export async function atualizarEmpresa(id: string, data: Partial<EmpresaInput>):
 
   const supabase = await createClient();
 
+  const empresaId = Number(id);
+  if (!Number.isInteger(empresaId)) {
+    return { success: false, error: 'ID de empresa inválido' };
+  }
+
+  const cnpj = data.cnpj || data.documento;
+  const updatePayload: { cnpj?: string; nome?: string } = {};
+  if (data.nome !== undefined) updatePayload.nome = data.nome;
+  if (cnpj !== undefined) updatePayload.cnpj = cnpj;
+
   const { data: empresa, error } = await supabase
     .from('empresas')
-    .update(data)
-    .eq('id', id)
+    .update(updatePayload)
+    .eq('id_empresa', empresaId)
     .select()
     .single();
 
@@ -128,12 +151,17 @@ export async function excluirEmpresa(id: string): Promise<ActionResult> {
     return { success: false, error: 'Apenas administradores podem excluir empresas' };
   }
 
+  const empresaId = Number(id);
+  if (!Number.isInteger(empresaId)) {
+    return { success: false, error: 'ID de empresa inválido' };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase
     .from('empresas')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+    .delete()
+    .eq('id_empresa', empresaId);
 
   if (error) {
     console.error('Erro ao excluir empresa:', error);

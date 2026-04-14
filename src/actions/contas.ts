@@ -38,7 +38,7 @@ export interface UpdateContaInput extends Partial<ContaInput> {
   url_comprovante_pagamento?: string;
 }
 
-export interface ActionResult<T = void> {
+export interface ActionResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -129,7 +129,7 @@ export async function criarConta(formData: FormData): Promise<ActionResult> {
       dados_novos: conta,
       realizado_por: user.id,
     })
-    .then(({ error: logError }) => {
+    .then(({ error: logError }: { error: Error | null }) => {
       if (logError) console.error('Erro ao registrar log:', logError);
     });
 
@@ -146,15 +146,50 @@ export async function criarConta(formData: FormData): Promise<ActionResult> {
 export async function criarContaJson(data: Record<string, unknown>): Promise<CreateContaResult> {
   const supabase = await createClient();
 
+  const descricao = typeof data.descricao === 'string' ? data.descricao : '';
+  const valor =
+    typeof data.valor === 'number'
+      ? data.valor
+      : typeof data.valor === 'string'
+        ? Number(data.valor)
+        : NaN;
+  const dataVencimento = typeof data.data_vencimento === 'string' ? data.data_vencimento : '';
+
+  if (!descricao || !Number.isFinite(valor) || !dataVencimento) {
+    return { success: false, error: 'Payload inválido para criação de conta' };
+  }
+
+  const insertData = {
+    descricao,
+    valor,
+    data_vencimento: dataVencimento,
+    fornecedor_id: typeof data.fornecedor_id === 'string' ? data.fornecedor_id : null,
+    categoria_id: typeof data.categoria_id === 'string' ? data.categoria_id : null,
+    favorecido_nome: typeof data.favorecido_nome === 'string' ? data.favorecido_nome : null,
+    favorecido_cnpj_cpf:
+      typeof data.favorecido_documento === 'string'
+        ? data.favorecido_documento
+        : typeof data.favorecido_cnpj_cpf === 'string'
+          ? data.favorecido_cnpj_cpf
+          : null,
+    numero_documento: typeof data.numero_documento === 'string' ? data.numero_documento : null,
+    linha_digitavel: typeof data.linha_digitavel === 'string' ? data.linha_digitavel : null,
+    codigo_barras: typeof data.codigo_barras === 'string' ? data.codigo_barras : null,
+    url_pdf_original: typeof data.url_pdf_original === 'string' ? data.url_pdf_original : null,
+    observacoes: typeof data.observacoes === 'string' ? data.observacoes : null,
+    status: 'pendente' as const,
+    status_processamento: 'processado' as const,
+  };
+
   // Verificar duplicata
-  if (data.fornecedor_id || data.favorecido_nome) {
+  if (insertData.fornecedor_id || insertData.favorecido_nome) {
     const { data: existente } = await supabase
       .from('contas_pagar')
       .select('id')
       .is('deleted_at', null)
       .eq('status', 'pendente')
-      .eq('valor', data.valor)
-      .eq('data_vencimento', data.data_vencimento)
+      .eq('valor', valor)
+      .eq('data_vencimento', dataVencimento)
       .single();
 
     if (existente) {
@@ -164,7 +199,7 @@ export async function criarContaJson(data: Record<string, unknown>): Promise<Cre
 
   const { data: conta, error } = await supabase
     .from('contas_pagar')
-    .insert({ ...data, status_processamento: 'processado' })
+    .insert(insertData)
     .select()
     .single();
 
@@ -220,7 +255,7 @@ export async function atualizarConta(id: string, updates: UpdateContaInput): Pro
       dados_novos: conta,
       realizado_por: user.id,
     })
-    .then(({ error: logError }) => {
+    .then(({ error: logError }: { error: Error | null }) => {
       if (logError) console.error('Erro ao registrar log:', logError);
     });
 

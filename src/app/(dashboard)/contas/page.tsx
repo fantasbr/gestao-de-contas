@@ -1,6 +1,5 @@
-import { queryContas, queryLookup } from '@/lib/supabase/queries';
 import { ContasClient } from '@/components/contas/ContasClient';
-import type { StatusConta } from '@/types/database';
+import { queryContas, queryLookup } from '@/lib/supabase/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,9 +13,13 @@ export default async function ContasPage() {
     <ContasClient
       initialContas={contasResult.data || []}
       initialTotal={contasResult.total || 0}
-      initialFornecedores={lookupData.fornecedores}
-      initialEmpresas={lookupData.empresas}
-      initialCategorias={lookupData.categorias}
+      lookup={{
+        fornecedores: lookupData.fornecedores,
+        empresas: lookupData.empresas,
+        categorias: lookupData.categorias,
+      }}
+      initialPage={1}
+      limit={25}
     />
   );
 }
