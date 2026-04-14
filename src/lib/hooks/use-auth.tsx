@@ -1,8 +1,12 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { PerfilUsuario } from '@/types';
+
+// Singleton fora do componente para garantir uma única instância
+// mesmo em StrictMode e hot-reload de produção
+const supabase = createClient();
 
 interface AuthUser {
   id: string;
@@ -25,14 +29,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mounted) return;
+        if (!mountedRef.current) return;
 
         if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
@@ -60,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 .eq('id', authUser.id)
                 .single();
 
-              if (mounted && perfil) {
+              if (mountedRef.current && perfil) {
                 setUser(prev => 
                   prev ? { 
                     ...prev, 
@@ -85,10 +89,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // supabase é singleton — array vazio é intencional
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -100,11 +105,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      // scope:'global' invalida a sessão no servidor Supabase,
+      // garantindo que o cookie SSR seja rejeitado mesmo antes de expirar
+      await supabase.auth.signOut({ scope: 'global' });
     } catch (e) {
       console.error('Erro ao fazer logout:', e);
     } finally {
       setUser(null);
+      // Limpa todo storage local para evitar estado residual
+      // que causa sidebar travada em produção (standalone/Docker)
+      try {
+        if (typeof window !== 'undefined') {
+          // Remove chaves do Supabase do localStorage
+          Object.keys(localStorage)
+            .filter((k) => k.startsWith('sb-'))
+            .forEach((k) => localStorage.removeItem(k));
+        }
+      } catch {
+        // Ignora se localStorage não estiver disponível
+      }
     }
   };
 
@@ -131,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Erro ao recarregar perfil:', error);
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
     }
   };
 
