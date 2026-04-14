@@ -34,15 +34,10 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copiar código fonte
 COPY . .
 
-# Receber variáveis em tempo de BUILD (necessárias para as envs NEXT_PUBLIC_ serem embutidas)
-ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-ARG NEXT_PUBLIC_APP_URL
-
-# Definir variáveis de ambiente (serão embutidas no build)
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+# Definir variáveis de ambiente com PLACEHOLDERS (serão substituídas pelo entrypoint.sh no runtime)
+ENV NEXT_PUBLIC_SUPABASE_URL="NEXT_PUBLIC_SUPABASE_URL_PLACEHOLDER"
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY="NEXT_PUBLIC_SUPABASE_ANON_KEY_PLACEHOLDER"
+ENV NEXT_PUBLIC_APP_URL="NEXT_PUBLIC_APP_URL_PLACEHOLDER"
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
@@ -78,4 +73,10 @@ EXPOSE 3000
 
 ENV NODE_OPTIONS="--max-old-space-size=256"
 
+# Copiar script de entrypoint e garantir que seja executável
+COPY --chown=nextjs:nodejs entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
+# Usa o entrypoint para fazer as substituições antes de subir o server
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["node", "server.js"]
