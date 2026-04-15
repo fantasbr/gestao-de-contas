@@ -1,13 +1,8 @@
-# ============================================
-# Docker Compose Local - Sistema de Contas a Pagar
-# ============================================
-# Uso: docker compose up -d
-# Este arquivo é destinado exclusivamente ao ambiente de DESENVOLVIMENTO local.
-
+name: contas
 version: "3.8"
 
 services:
-  app:
+  contas_app:
     build:
       context: .
       args:

@@ -4,7 +4,7 @@
 
 FROM node:22-alpine AS base
 
-LABEL org.opencontainers.image.version="0.1.6"
+LABEL org.opencontainers.image.version="0.1.7"
 LABEL org.opencontainers.image.source="https://github.com/fantasbr/gestao-de-contas"
 LABEL org.opencontainers.image.description="Sistema de Gestão de Contas a Pagar"
 

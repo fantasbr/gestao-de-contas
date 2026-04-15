@@ -89,10 +89,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } else {
             setUser(null);
             setIsLoading(false);
+            if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+              window.location.href = '/login';
+            }
           }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setIsLoading(false);
+          if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+            window.location.href = '/login';
+          }
         }
       }
     );
