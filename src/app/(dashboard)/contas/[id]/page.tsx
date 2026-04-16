@@ -1,4 +1,4 @@
-import { queryConta } from '@/lib/supabase/queries';
+import { queryConta, queryLookup } from '@/lib/supabase/queries';
 import { getCurrentUser } from '@/actions/auth';
 import { ContaDetailClient } from '@/components/contas/ContaDetailClient';
 import { redirect } from 'next/navigation';
@@ -17,6 +17,7 @@ export default async function ContaDetailPage({ params }: { params: { id: string
   const id = resolvedParams.id;
 
   const { data: conta } = await queryConta(id);
+  const lookup = await queryLookup();
 
   const podeEditar = ['admin', 'atendente'].includes(user.role || '');
   const podeExcluir = user.role === 'admin';
@@ -26,6 +27,7 @@ export default async function ContaDetailPage({ params }: { params: { id: string
       conta={conta}
       podeEditar={podeEditar}
       podeExcluir={podeExcluir}
+      lookup={lookup}
     />
   );
 }

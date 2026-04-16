@@ -23,6 +23,9 @@ import {
   Upload,
   Loader2,
   Trash2,
+  Edit,
+  Pencil,
+  FileSearch,
 } from 'lucide-react';
 import {
   Dialog,
@@ -36,7 +39,21 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/layout';
-import { marcarConferido, registrarPagamento, excluirConta } from '@/actions/contas';
+import { marcarConferido, registrarPagamento, excluirConta, atualizarConta } from '@/actions/contas';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { maskCNPJCPF } from '@/lib/utils';
 
 interface Conta {
   id: string;
@@ -78,6 +95,11 @@ interface ContaDetailClientProps {
   podeEditar?: boolean;
   podeExcluir?: boolean;
   conferidoPorNome?: string | null;
+  lookup: {
+    fornecedores: { id: string; nome: string }[];
+    empresas: { id_empresa: number; nome: string }[];
+    categorias: { id: string; nome: string }[];
+  };
 }
 
 export function ContaDetailClient({
@@ -85,6 +107,7 @@ export function ContaDetailClient({
   podeEditar = false,
   podeExcluir = false,
   conferidoPorNome,
+  lookup,
 }: ContaDetailClientProps) {
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -94,6 +117,20 @@ export function ContaDetailClient({
   const [dataPagamento, setDataPagamento] = useState(new Date().toISOString().split('T')[0]);
   const [comprovante, setComprovante] = useState<File | null>(null);
   const [pagarLoading, setPagarLoading] = useState(false);
+
+  // Estados para Edição
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    descricao: conta?.descricao || '',
+    valor: conta?.valor?.toString() || '',
+    data_vencimento: conta?.data_vencimento || '',
+    fornecedor_id: conta?.fornecedor?.id || '',
+    favorecido_nome: conta?.favorecido_nome || '',
+    favorecido_cnpj_cpf: conta?.favorecido_cnpj_cpf || '',
+    categoria_id: conta?.categoria?.id || '',
+    observacoes: conta?.observacoes || '',
+  });
 
   if (!conta) {
     return (
@@ -201,6 +238,50 @@ export function ContaDetailClient({
     }
   };
 
+  const handleUpdateConta = async () => {
+    setIsSubmitting(true);
+    try {
+      const updates = {
+        descricao: editFormData.descricao,
+        valor: Number(editFormData.valor),
+        data_vencimento: editFormData.data_vencimento,
+        fornecedor_id: editFormData.fornecedor_id || undefined,
+        favorecido_nome: editFormData.favorecido_nome || undefined,
+        favorecido_documento: editFormData.favorecido_cnpj_cpf || undefined,
+        categoria_id: editFormData.categoria_id || undefined,
+        observacoes: editFormData.observacoes || undefined,
+      };
+
+      const result = await atualizarConta(conta.id, updates);
+      if (result.success) {
+        toast.success('Conta atualizada com sucesso!');
+        setShowEditDialog(false);
+        router.refresh();
+      } else {
+        toast.error(result.error || 'Erro ao atualizar conta');
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar conta:', error);
+      toast.error('Erro ao atualizar conta');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: any) => {
+    try {
+      const result = await atualizarConta(conta.id, { status: newStatus });
+      if (result.success) {
+        toast.success(`Status alterado para ${newStatus.toUpperCase()}`);
+        router.refresh();
+      } else {
+        toast.error(result.error || 'Erro ao alterar status');
+      }
+    } catch (error) {
+      toast.error('Erro ao alterar status');
+    }
+  };
+
   return (
     <>
       <Header />
@@ -216,6 +297,157 @@ export function ContaDetailClient({
             <p className="text-muted-foreground">{conta.descricao}</p>
           </div>
           <div className="flex gap-2">
+            {podeEditar && (
+              <>
+                <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Editar
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Editar Conta</DialogTitle>
+                      <DialogDescription>
+                        Altere as informações da conta abaixo.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-descricao">Descrição *</Label>
+                        <Input
+                          id="edit-descricao"
+                          value={editFormData.descricao}
+                          onChange={(e) => setEditFormData({ ...editFormData, descricao: e.target.value })}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-valor">Valor (R$) *</Label>
+                          <Input
+                            id="edit-valor"
+                            type="number"
+                            step="0.01"
+                            value={editFormData.valor}
+                            onChange={(e) => setEditFormData({ ...editFormData, valor: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-vencimento">Vencimento *</Label>
+                          <Input
+                            id="edit-vencimento"
+                            type="date"
+                            value={editFormData.data_vencimento}
+                            onChange={(e) => setEditFormData({ ...editFormData, data_vencimento: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Fornecedor</Label>
+                          <Select
+                            value={editFormData.fornecedor_id}
+                            onValueChange={(value) => {
+                              const f = lookup.fornecedores.find(item => item.id === value);
+                              setEditFormData({ 
+                                ...editFormData, 
+                                fornecedor_id: value,
+                                favorecido_nome: f?.nome || editFormData.favorecido_nome
+                              });
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {lookup.fornecedores.map(f => (
+                                <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Categoria</Label>
+                          <Select
+                            value={editFormData.categoria_id}
+                            onValueChange={(value) => setEditFormData({ ...editFormData, categoria_id: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {lookup.categorias.map(c => (
+                                <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-favorecido">Favorecido</Label>
+                          <Input
+                            id="edit-favorecido"
+                            value={editFormData.favorecido_nome}
+                            onChange={(e) => setEditFormData({ ...editFormData, favorecido_nome: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-doc">CNPJ/CPF</Label>
+                          <Input
+                            id="edit-doc"
+                            value={editFormData.favorecido_cnpj_cpf}
+                            onChange={(e) => setEditFormData({ ...editFormData, favorecido_cnpj_cpf: maskCNPJCPF(e.target.value) })}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-obs">Observações</Label>
+                        <Textarea
+                          id="edit-obs"
+                          value={editFormData.observacoes}
+                          onChange={(e) => setEditFormData({ ...editFormData, observacoes: e.target.value })}
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                        Cancelar
+                      </Button>
+                      <Button onClick={handleUpdateConta} disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        Salvar Alterações
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      <FileSearch className="h-4 w-4 mr-2" />
+                      Status
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleStatusChange('pendente')}>
+                      Marcar como Pendente
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange('pago')}>
+                      Marcar como Pago
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange('vencido')}>
+                      Marcar como Vencido
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange('cancelado')}>
+                      Marcar como Cancelado
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
             {podeEditar && !conta.conferido && (
               <Dialog open={showConferirDialog} onOpenChange={setShowConferirDialog}>
                 <DialogTrigger asChild>
@@ -365,14 +597,27 @@ export function ContaDetailClient({
 
         {/* Status */}
         <div className="flex gap-4 mb-6">
-          <Badge
-            variant={
-              conta.status === 'pago' ? 'success' : conta.status === 'vencido' ? 'destructive' : 'warning'
-            }
-            className="text-sm px-3 py-1"
-          >
-            {conta.status.toUpperCase()}
-          </Badge>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="hover:opacity-80 transition-opacity focus:outline-none">
+                <Badge
+                  variant={
+                    conta.status === 'pago' ? 'success' : conta.status === 'vencido' ? 'destructive' : 'warning'
+                  }
+                  className="text-sm px-3 py-1 cursor-pointer"
+                >
+                  {conta.status.toUpperCase()}
+                </Badge>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleStatusChange('pendente')}>Pendente</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleStatusChange('pago')}>Pago</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleStatusChange('vencido')}>Vencido</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleStatusChange('cancelado')}>Cancelado</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           <ProcessamentoBadge status={conta.status_processamento as any} />
           {conta.conferido && (
             <Badge variant="success" className="text-sm px-3 py-1">
@@ -480,39 +725,46 @@ export function ContaDetailClient({
             </CardHeader>
             <CardContent className="space-y-4">
               {conta.url_pdf_original ? (
-                <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center justify-between p-4 border rounded-xl bg-accent/30 hover:bg-accent/50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <FileText className="h-8 w-8 text-red-500" />
+                    <div className="p-1.5 bg-red-100 dark:bg-red-950/50 rounded-lg">
+                      <FileText className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    </div>
                     <div>
-                      <p className="font-medium">PDF do Boleto</p>
-                      <p className="text-sm text-muted-foreground">Original</p>
+                      <p className="text-sm font-semibold">PDF do Boleto</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Original OCR</p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" size="sm" asChild className="h-8">
                     <a href={conta.url_pdf_original} target="_blank" rel="noopener noreferrer">
-                      <Download className="h-4 w-4 mr-2" />
-                      Baixar
+                      <FileSearch className="h-3.5 w-3.5 mr-2" />
+                      Visualizar
                     </a>
                   </Button>
                 </div>
               ) : (
-                <p className="text-muted-foreground">Nenhum arquivo anexado</p>
+                <div className="text-center py-4 border-2 border-dashed rounded-xl opacity-40">
+                  <p className="text-xs text-muted-foreground">Nenhum boleto anexado</p>
+                </div>
               )}
+
               {conta.url_comprovante_pagamento && (
-                <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center justify-between p-4 border rounded-xl bg-green-50/50 dark:bg-green-950/20 hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors">
                   <div className="flex items-center gap-3">
-                    <FileText className="h-8 w-8 text-green-500" />
+                    <div className="p-1.5 bg-green-100 dark:bg-green-900/40 rounded-lg">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
                     <div>
-                      <p className="font-medium">Comprovante de Pagamento</p>
-                      <p className="text-sm text-muted-foreground">
-                        Baixado em {formatDate(conta.data_pagamento!)}
+                      <p className="text-sm font-semibold">Comprovante</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                        Pago em {formatDate(conta.data_pagamento!)}
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" size="sm" asChild className="h-8">
                     <a href={conta.url_comprovante_pagamento} target="_blank" rel="noopener noreferrer">
-                      <Download className="h-4 w-4 mr-2" />
-                      Baixar
+                      <FileSearch className="h-3.5 w-3.5 mr-2" />
+                      Visualizar
                     </a>
                   </Button>
                 </div>
