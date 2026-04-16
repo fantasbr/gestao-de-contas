@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/hooks';
+import { useEffect } from 'react';
 import {
   LayoutDashboard,
   Receipt,
@@ -64,10 +65,16 @@ const menuItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshUser } = useAuth();
 
   const userRole = user?.role || '';
   const userName = user?.nome || user?.email || '';
+
+  useEffect(() => {
+    if (user && !user.role) {
+      refreshUser();
+    }
+  }, [user?.id, user?.role, refreshUser]);
 
   const filteredMenu = menuItems.filter(
     (item) => item.roles.includes(userRole)
