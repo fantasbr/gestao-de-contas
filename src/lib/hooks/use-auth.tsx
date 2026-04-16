@@ -67,11 +67,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // Fetch missing profile data
             try {
-              const { data: perfil } = await supabase
+              const { data: perfil, error } = await supabase
                 .from('perfis_usuarios')
                 .select('*')
                 .eq('id', authUser.id)
                 .single();
+
+              if (error) {
+                console.error('Erro ao buscar perfil do usuário (pode indicar token expirado):', error);
+              }
 
               if (mountedRef.current && perfil) {
                 setUser(prev => 
@@ -84,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 );
               }
             } catch (error) {
-              console.error('Erro ao buscar perfil do usuário:', error);
+              console.error('Falha na requisição de perfil do usuário:', error);
             }
           } else {
             setUser(null);
@@ -121,26 +125,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     if (!supabase) return;
+    
+    // 1. Limpa o estado local imediatamente para forçar atualização da UI
+    setUser(null);
+    
+    // 2. Limpa o storage local proativamente para evitar estado residual/corrompido
     try {
-      // scope:'global' invalida a sessão no servidor Supabase,
-      // garantindo que o cookie SSR seja rejeitado mesmo antes de expirar
-      await supabase.auth.signOut({ scope: 'global' });
-    } catch (e) {
-      console.error('Erro ao fazer logout:', e);
-    } finally {
-      setUser(null);
-      // Limpa todo storage local para evitar estado residual
-      // que causa sidebar travada em produção (standalone/Docker)
-      try {
-        if (typeof window !== 'undefined') {
-          // Remove chaves do Supabase do localStorage
-          Object.keys(localStorage)
-            .filter((k) => k.startsWith('sb-'))
-            .forEach((k) => localStorage.removeItem(k));
-        }
-      } catch {
-        // Ignora se localStorage não estiver disponível
+      if (typeof window !== 'undefined') {
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith('sb-'))
+          .forEach((k) => localStorage.removeItem(k));
       }
+    } catch {}
+
+    // 3. Tenta invalidar a sessão no servidor com timeout
+    // Se o token estiver corrompido ou expirado, o supabase-js pode travar na requisição
+    try {
+      await Promise.race([
+        supabase.auth.signOut({ scope: 'global' }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout logout servidor')), 2500))
+      ]);
+    } catch (e) {
+      console.warn('Falha remota/timeout no logout (sessão já devia estar inválida):', e);
     }
   };
 
