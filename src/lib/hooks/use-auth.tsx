@@ -126,27 +126,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     if (!supabase) return;
     
-    // 1. Limpa o estado local imediatamente para forçar atualização da UI
+    // 1. Limpa o estado local imediatamente
     setUser(null);
+    if (mountedRef.current) setIsLoading(false);
     
-    // 2. Limpa o storage local proativamente para evitar estado residual/corrompido
+    // 2. Limpa o storage e force limpezas manuais em cookies caso a SDK falhe
     try {
       if (typeof window !== 'undefined') {
         Object.keys(localStorage)
           .filter((k) => k.startsWith('sb-'))
           .forEach((k) => localStorage.removeItem(k));
+          
+        // Varredura extra para destruir cookies de sessão (usado no @supabase/ssr)
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i];
+          const eqPos = cookie.indexOf("=");
+          const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
+          if (name.startsWith('sb-')) {
+            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+          }
+        }
       }
     } catch {}
 
-    // 3. Tenta invalidar a sessão no servidor com timeout
-    // Se o token estiver corrompido ou expirado, o supabase-js pode travar na requisição
+    // 3. Tenta notificar o backend para invalidar tokens, mas sem travar a thread
+    supabase.auth.signOut({ scope: 'global' }).catch(() => {});
+
+    // 4. Força o logout apenas no escopo LOCAL aguardando sua execução.
+    // O escopo "local" NÃO depende de rede, então é instantâneo e NUNCA vai travar a interface.
+    // Isso assegura a deleção oficial da sessão na SDK antes do redirecionamento.
     try {
-      await Promise.race([
-        supabase.auth.signOut({ scope: 'global' }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout logout servidor')), 2500))
-      ]);
+      await supabase.auth.signOut({ scope: 'local' });
     } catch (e) {
-      console.warn('Falha remota/timeout no logout (sessão já devia estar inválida):', e);
+      console.warn('Falha local ao fazer logout:', e);
     }
   };
 
