@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout';
 import { Button } from '@/components/ui/button';
@@ -395,7 +396,15 @@ export function FornecedoresClient({
                 <TableBody>
                   {fornecedoresFiltrados.map((fornecedor) => (
                     <TableRow key={fornecedor.id}>
-                      <TableCell className="font-medium">{fornecedor.nome}</TableCell>
+                      <TableCell className="font-medium">
+                        <Link 
+                          href={`/fornecedores/${fornecedor.id}`}
+                          className="text-primary hover:underline flex items-center gap-2"
+                        >
+                          <Building className="h-4 w-4 text-muted-foreground" />
+                          {fornecedor.nome}
+                        </Link>
+                      </TableCell>
                       <TableCell>{fornecedor.cnpj_cpf || '-'}</TableCell>
                       <TableCell>{fornecedor.contato || '-'}</TableCell>
                       <TableCell>{fornecedor.email || '-'}</TableCell>

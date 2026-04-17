@@ -26,6 +26,7 @@ import {
   Edit,
   Pencil,
   FileSearch,
+  Building,
 } from 'lucide-react';
 import {
   Dialog,
@@ -297,13 +298,13 @@ export function ContaDetailClient({
             <p className="text-muted-foreground">{conta.descricao}</p>
           </div>
           <div className="flex gap-2">
-            {podeEditar && (
+            {podeEditar ? (
               <>
                 <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
                   <DialogTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="default">
                       <Pencil className="h-4 w-4 mr-2" />
-                      Editar
+                      Editar Informações
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -447,6 +448,10 @@ export function ContaDetailClient({
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
+            ) : (
+              <div className="text-[10px] text-red-500 uppercase font-bold self-center px-2 py-1 bg-red-50 rounded">
+                Sem Acesso Editar
+              </div>
             )}
             {podeEditar && !conta.conferido && (
               <Dialog open={showConferirDialog} onOpenChange={setShowConferirDialog}>
@@ -676,7 +681,19 @@ export function ContaDetailClient({
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Nome</span>
-                <span>{conta.fornecedor?.nome || conta.favorecido_nome || '-'}</span>
+                <span className="font-medium">
+                  {conta.fornecedor ? (
+                    <Link 
+                      href={`/fornecedores/${conta.fornecedor.id}`}
+                      className="text-primary hover:underline flex items-center gap-1"
+                    >
+                      <Building className="h-3.5 w-3.5" />
+                      {conta.fornecedor.nome}
+                    </Link>
+                  ) : (
+                    conta.favorecido_nome || '-'
+                  )}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">CNPJ/CPF</span>

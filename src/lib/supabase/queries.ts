@@ -249,6 +249,32 @@ export async function queryFornecedores(): Promise<QueryResult<any[]>> {
 }
 
 /**
+ * Busca fornecedor por ID
+ */
+export async function queryFornecedor(id: string): Promise<QueryResult<any>> {
+  try {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+      .from('fornecedores')
+      .select('*')
+      .eq('id', id)
+      .is('deleted_at', null)
+      .single();
+
+    if (error) {
+      console.error('Erro ao buscar fornecedor:', error);
+      return { data: null, error: error.message };
+    }
+
+    return { data, error: null };
+  } catch (err: any) {
+    console.error('Erro ao buscar fornecedor:', err);
+    return { data: null, error: err.message };
+  }
+}
+
+/**
  * Lista empresas
  */
 export async function queryEmpresas(): Promise<QueryResult<any[]>> {

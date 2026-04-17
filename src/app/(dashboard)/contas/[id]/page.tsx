@@ -19,8 +19,12 @@ export default async function ContaDetailPage({ params }: { params: { id: string
   const { data: conta } = await queryConta(id);
   const lookup = await queryLookup();
 
-  const podeEditar = ['admin', 'atendente'].includes(user.role || '');
-  const podeExcluir = user.role === 'admin';
+  // Debug: Verificando o papel do usuário no servidor
+  console.log(`[DEBUG] Acessando Detalhes da Conta - Usuário: ${user.email}, Role: ${user.role}`);
+
+  const role = (user.role || user.perfil?.role || '').toLowerCase();
+  const podeEditar = ['admin', 'atendente'].includes(role);
+  const podeExcluir = role === 'admin';
 
   return (
     <ContaDetailClient 

@@ -130,6 +130,8 @@ export async function getCurrentUser() {
 
   return {
     ...user,
+    role: perfil?.role || null,
+    nome: perfil?.nome || null,
     perfil,
   };
 }
