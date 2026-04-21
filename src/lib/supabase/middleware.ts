@@ -37,7 +37,13 @@ export async function updateSession(request: NextRequest): Promise<SessionUpdate
         supabaseResponse = NextResponse.next({ request });
 
         nextCookies.forEach(({ name, value, options }) => {
-          supabaseResponse.cookies.set(name, value, options);
+          // Forçar os options para sameSite=none e secure=true para iframe cross-site funcionar
+          const cookieOpts = {
+            ...options,
+            sameSite: 'none' as const,
+            secure: true
+          };
+          supabaseResponse.cookies.set(name, value, cookieOpts);
         });
       },
     },

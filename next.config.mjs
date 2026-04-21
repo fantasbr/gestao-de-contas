@@ -26,6 +26,20 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['@supabase/supabase-js'],
   },
+
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors https://crm.brancaautoescola.com.br;",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

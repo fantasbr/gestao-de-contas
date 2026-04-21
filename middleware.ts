@@ -11,6 +11,10 @@ function redirectWithCookies(url: URL, cookiesToSet: CookieToSet[]) {
     redirectResponse.cookies.set(name, value, options);
   });
 
+  // Garantir que a página pode ser carregada em iframe
+  redirectResponse.headers.set('Content-Security-Policy', "frame-ancestors *;");
+  redirectResponse.headers.delete('X-Frame-Options');
+
   return redirectResponse;
 }
 

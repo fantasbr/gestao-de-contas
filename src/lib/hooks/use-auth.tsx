@@ -67,11 +67,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // Fetch missing profile data
             try {
-              const { data: perfil, error } = await supabase
+              const { data, error } = await supabase
                 .from('perfis_usuarios')
                 .select('*')
                 .eq('id', authUser.id)
-                .single();
+                .limit(1);
+
+              const perfil = data?.[0] || null;
 
               if (error) {
                 console.error('Erro ao buscar perfil do usuário (pode indicar token expirado):', error);
@@ -144,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const eqPos = cookie.indexOf("=");
           const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
           if (name.startsWith('sb-')) {
-            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;Secure;SameSite=Lax";
+            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;Secure;SameSite=None";
           }
         }
       }
@@ -167,11 +169,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase || !user?.id) return;
     setIsLoading(true);
     try {
-      const { data: perfil } = await supabase
+      const { data, error } = await supabase
         .from('perfis_usuarios')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .limit(1);
+        
+      const perfil = data?.[0] || null;
         
       if (perfil) {
         setUser(prev => 

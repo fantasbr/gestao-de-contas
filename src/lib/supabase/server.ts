@@ -19,7 +19,12 @@ export async function createServerSupabaseClient(): Promise<ServerSupabaseClient
       setAll(cookiesToSet: CookieToSet[]) {
         try {
           cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
+            const cookieOpts = {
+              ...options,
+              sameSite: 'none' as const,
+              secure: true
+            };
+            cookieStore.set(name, value, cookieOpts);
           });
         } catch {
           // Server Components cannot always mutate cookies; middleware handles refresh writes.
