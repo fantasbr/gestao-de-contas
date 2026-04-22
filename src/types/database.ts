@@ -12,6 +12,7 @@ export type StatusConta = 'pendente' | 'pago' | 'vencido' | 'cancelado';
 export type StatusProcessamento = 'pendente' | 'enviado' | 'processando' | 'processado' | 'erro';
 export type RoleUsuario = 'admin' | 'atendente' | 'motorista';
 export type TipoPix = 'cpf' | 'cnpj' | 'email' | 'telefone' | 'aleatoria';
+export type TipoDespesa = 'Fixo' | 'Variável';
 
 // =============================================================================
 // Tabelas do banco
@@ -250,6 +251,58 @@ export interface Database {
         Relationships: [];
       };
 
+      contaspagas: {
+        Row: {
+          id: number;
+          beneficiario_nome: string | null;
+          pagador_nome: string | null;
+          data_vencimento: string | null;
+          data_pagamento: string | null;
+          valor_documento: number | null;
+          juros_multa: number | null;
+          desconto_abatimento: number | null;
+          valor_pago: number | null;
+          url_pdf: string | null;
+          n8n: string | null;
+          created_at: string | null;
+          tipo: TipoDespesa | null;
+          identificador: string | null;
+        };
+        Insert: {
+          id?: number;
+          beneficiario_nome?: string | null;
+          pagador_nome?: string | null;
+          data_vencimento?: string | null;
+          data_pagamento?: string | null;
+          valor_documento?: number | null;
+          juros_multa?: number | null;
+          desconto_abatimento?: number | null;
+          valor_pago?: number | null;
+          url_pdf?: string | null;
+          n8n?: string | null;
+          created_at?: string | null;
+          tipo?: TipoDespesa | null;
+          identificador?: string | null;
+        };
+        Update: {
+          id?: number;
+          beneficiario_nome?: string | null;
+          pagador_nome?: string | null;
+          data_vencimento?: string | null;
+          data_pagamento?: string | null;
+          valor_documento?: number | null;
+          juros_multa?: number | null;
+          desconto_abatimento?: number | null;
+          valor_pago?: number | null;
+          url_pdf?: string | null;
+          n8n?: string | null;
+          created_at?: string | null;
+          tipo?: TipoDespesa | null;
+          identificador?: string | null;
+        };
+        Relationships: [];
+      };
+
       app_webhooks: {
         Row: {
           id: string;
@@ -369,6 +422,7 @@ export type AppWebhook = Database['public']['Tables']['app_webhooks']['Row'];
 export type ApiConfiguracao = Database['public']['Tables']['api_configuracoes']['Row'];
 export type WebhookLog = Database['public']['Tables']['webhooks_log']['Row'];
 export type ContaLog = Database['public']['Tables']['contas_log']['Row'];
+export type ContaPaga = Database['public']['Tables']['contaspagas']['Row'];
 
 // =============================================================================
 // Tipos com relações (para selects mais completos)

@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import {
   LayoutDashboard,
   Receipt,
+  BadgeCheck,
   Users,
   Tags,
   Building2,
@@ -29,6 +30,12 @@ const menuItems = [
     href: '/contas',
     icon: Receipt,
     roles: ['admin', 'atendente', 'motorista'],
+  },
+  {
+    title: 'Contas Pagas',
+    href: '/contas-pagas',
+    icon: BadgeCheck,
+    roles: ['admin', 'atendente'],
   },
   {
     title: 'Fornecedores',

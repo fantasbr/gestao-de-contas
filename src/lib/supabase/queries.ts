@@ -4,7 +4,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
-import type { StatusConta, StatusProcessamento } from '@/types/database';
+import type { StatusConta, StatusProcessamento, TipoDespesa } from '@/types/database';
 
 // ============================================
 // TIPOS
@@ -20,6 +20,15 @@ export interface FiltrosContas {
   data_inicio?: string;
   data_fim?: string;
   busca?: string;
+}
+
+export interface FiltrosContasPagas {
+  busca?: string;
+  tipo?: string;
+  data_pagamento_inicio?: string;
+  data_pagamento_fim?: string;
+  data_vencimento_inicio?: string;
+  data_vencimento_fim?: string;
 }
 
 export interface Estatisticas {
@@ -369,3 +378,133 @@ export async function queryLogsConta(contaId: string): Promise<QueryResult<any[]
     return { data: [], error: err.message };
   }
 }
+
+// ============================================
+// QUERIES - CONTAS PAGAS
+// ============================================
+
+export async function queryContasPagas(
+  filtros: FiltrosContasPagas = {},
+  page = 1,
+  limit = 25
+): Promise<QueryListResult<any>> {
+  try {
+    const supabase = await createClient();
+
+    let query = supabase
+      .from('contaspagas')
+      .select('*', { count: 'exact' });
+
+    if (filtros.busca) {
+      query = query.or(`beneficiario_nome.ilike.%${filtros.busca}%,pagador_nome.ilike.%${filtros.busca}%`);
+    }
+    if (filtros.tipo) {
+      query = query.eq('tipo', filtros.tipo as TipoDespesa);
+    }
+    if (filtros.data_pagamento_inicio) {
+      query = query.gte('data_pagamento', filtros.data_pagamento_inicio);
+    }
+    if (filtros.data_pagamento_fim) {
+      query = query.lte('data_pagamento', filtros.data_pagamento_fim);
+    }
+    if (filtros.data_vencimento_inicio) {
+      query = query.gte('data_vencimento', filtros.data_vencimento_inicio);
+    }
+    if (filtros.data_vencimento_fim) {
+      query = query.lte('data_vencimento', filtros.data_vencimento_fim);
+    }
+
+    query = query.order('data_pagamento', { ascending: false }).range((page - 1) * limit, page * limit - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('Erro ao buscar contas pagas:', error);
+      return { data: [], total: 0, error: error.message };
+    }
+
+    return {
+      data: data || [],
+      total: count || 0,
+      error: null,
+    };
+  } catch (err: any) {
+    console.error('Erro ao buscar contas pagas:', err);
+    return { data: [], total: 0, error: err.message };
+  }
+}
+
+export async function queryContaPaga(id: string): Promise<QueryResult<any>> {
+  try {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+      .from('contaspagas')
+      .select('*')
+      .eq('id', Number(id))
+      .single();
+
+    if (error) {
+      console.error('Erro ao buscar conta paga:', error);
+      return { data: null, error: error.message };
+    }
+
+    return { data, error: null };
+  } catch (err: any) {
+    console.error('Erro ao buscar conta paga:', err);
+    return { data: null, error: err.message };
+  }
+}
+
+export async function queryEstatisticasContasPagas(filtros: FiltrosContasPagas = {}): Promise<QueryResult<any>> {
+  try {
+    const supabase = await createClient();
+    
+    // Total numbers
+    let query = supabase
+      .from('contaspagas')
+      .select('valor_pago, juros_multa', { count: 'exact' });
+
+    if (filtros.busca) {
+      query = query.or(`beneficiario_nome.ilike.%${filtros.busca}%,pagador_nome.ilike.%${filtros.busca}%`);
+    }
+    if (filtros.tipo) {
+      query = query.eq('tipo', filtros.tipo as TipoDespesa);
+    }
+    if (filtros.data_pagamento_inicio) {
+      query = query.gte('data_pagamento', filtros.data_pagamento_inicio);
+    }
+    if (filtros.data_pagamento_fim) {
+      query = query.lte('data_pagamento', filtros.data_pagamento_fim);
+    }
+    if (filtros.data_vencimento_inicio) {
+      query = query.gte('data_vencimento', filtros.data_vencimento_inicio);
+    }
+    if (filtros.data_vencimento_fim) {
+      query = query.lte('data_vencimento', filtros.data_vencimento_fim);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('Erro ao buscar estatísticas contas pagas:', error);
+      return { data: null, error: error.message };
+    }
+
+    const totalValorPago = data?.reduce((acc, curr) => acc + Number(curr.valor_pago || 0), 0) || 0;
+    const totalJurosMulta = data?.reduce((acc, curr) => acc + Number(curr.juros_multa || 0), 0) || 0;
+
+    return {
+      data: {
+        totalRegistros: count || 0,
+        totalValorPago,
+        totalJurosMulta
+      },
+      error: null
+    };
+  } catch (err: any) {
+    console.error('Erro ao buscar estatísticas contas pagas:', err);
+    return { data: null, error: err.message };
+  }
+}
+

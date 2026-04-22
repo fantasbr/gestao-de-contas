@@ -25,6 +25,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/' ||
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/contas') ||
+    pathname.startsWith('/contas-pagas') ||
     pathname.startsWith('/fornecedores') ||
     pathname.startsWith('/categorias') ||
     pathname.startsWith('/empresas') ||
