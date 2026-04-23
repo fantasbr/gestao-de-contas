@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+
 import { toast } from 'sonner';
 import { atualizarContaPaga } from '@/actions/contas-pagas';
 import type { ContaPaga } from '@/types/database';
@@ -31,7 +33,9 @@ const editSchema = z.object({
   valor_pago: z.coerce.number().optional(),
   tipo: z.enum(['Fixo', 'Variável']).nullable().optional(),
   url_pdf: z.string().url('URL inválida').or(z.literal('')).optional(),
+  descricao: z.string().optional(),
 });
+
 
 type EditFormData = z.infer<typeof editSchema>;
 
@@ -62,8 +66,10 @@ export function ContaPagaEditModal({
       valor_pago: conta.valor_pago || 0,
       tipo: conta.tipo || undefined,
       url_pdf: conta.url_pdf || '',
+      descricao: conta.descricao || '',
     },
   });
+
 
   // Resetar o formulário quando os dados da conta mudam ou o modal abre
   useEffect(() => {
@@ -79,7 +85,9 @@ export function ContaPagaEditModal({
         valor_pago: conta.valor_pago || 0,
         tipo: conta.tipo || undefined,
         url_pdf: conta.url_pdf || '',
+        descricao: conta.descricao || '',
       });
+
     }
   }, [isOpen, conta, form]);
 
@@ -196,7 +204,18 @@ export function ContaPagaEditModal({
                 <span className="text-sm text-destructive">{form.formState.errors.url_pdf.message}</span>
               )}
             </div>
+
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="descricao">Descrição / Observações</Label>
+              <Textarea 
+                id="descricao" 
+                {...form.register('descricao')} 
+                placeholder="Detalhes adicionais sobre a conta paga..."
+                rows={3}
+              />
+            </div>
           </div>
+
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>

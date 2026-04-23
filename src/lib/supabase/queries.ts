@@ -396,8 +396,9 @@ export async function queryContasPagas(
       .select('*', { count: 'exact' });
 
     if (filtros.busca) {
-      query = query.or(`beneficiario_nome.ilike.%${filtros.busca}%,pagador_nome.ilike.%${filtros.busca}%`);
+      query = query.or(`beneficiario_nome.ilike.%${filtros.busca}%,pagador_nome.ilike.%${filtros.busca}%,descricao.ilike.%${filtros.busca}%`);
     }
+
     if (filtros.tipo) {
       query = query.eq('tipo', filtros.tipo as TipoDespesa);
     }
@@ -466,8 +467,9 @@ export async function queryEstatisticasContasPagas(filtros: FiltrosContasPagas =
       .select('valor_pago, juros_multa', { count: 'exact' });
 
     if (filtros.busca) {
-      query = query.or(`beneficiario_nome.ilike.%${filtros.busca}%,pagador_nome.ilike.%${filtros.busca}%`);
+      query = query.or(`beneficiario_nome.ilike.%${filtros.busca}%,pagador_nome.ilike.%${filtros.busca}%,descricao.ilike.%${filtros.busca}%`);
     }
+
     if (filtros.tipo) {
       query = query.eq('tipo', filtros.tipo as TipoDespesa);
     }

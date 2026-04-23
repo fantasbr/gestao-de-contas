@@ -16,6 +16,7 @@ const contaPagaSchema = z.object({
   url_pdf: z.string().nullable().optional(),
   tipo: z.enum(['Fixo', 'Variável']).nullable().optional(),
   identificador: z.string().nullable().optional(),
+  descricao: z.string().nullable().optional(),
 });
 
 export async function atualizarContaPaga(id: number | string, formData: any) {

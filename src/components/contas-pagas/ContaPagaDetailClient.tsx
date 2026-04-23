@@ -101,7 +101,20 @@ export function ContaPagaDetailClient({ conta, canEdit }: ContaPagaDetailClientP
             </div>
           </div>
 
+          {/* Descrição */}
+          {conta.descricao && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Descrição</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground whitespace-pre-wrap">{conta.descricao}</p>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
             {/* Involved Parties */}
             <Card>
               <CardHeader>

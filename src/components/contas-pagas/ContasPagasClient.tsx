@@ -61,9 +61,10 @@ export function ContasPagasClient({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const [contas] = useState<ContaPaga[]>(initialContas);
-  const [total] = useState(initialTotal);
-  const [page] = useState(initialPage);
+  // Usar props diretamente para garantir que o componente atualize quando o servidor re-renderizar
+  const contas = initialContas;
+  const total = initialTotal;
+  const page = initialPage;
 
   const date = new Date();
   const primeiroDiaDoMes = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
@@ -79,6 +80,20 @@ export function ContasPagasClient({
 
   const [buscaInput, setBuscaInput] = useState(filtros.busca);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sincronizar estado local com a URL (importante para navegação do navegador e reset de filtros)
+  useEffect(() => {
+    const newFiltros = {
+      tipo: searchParams.get('tipo') || '',
+      data_pagamento_inicio: searchParams.get('data_pagamento_inicio') || primeiroDiaDoMes,
+      data_pagamento_fim: searchParams.get('data_pagamento_fim') || '',
+      data_vencimento_inicio: searchParams.get('data_vencimento_inicio') || '',
+      data_vencimento_fim: searchParams.get('data_vencimento_fim') || '',
+      busca: searchParams.get('busca') || '',
+    };
+    setFiltros(newFiltros);
+    setBuscaInput(newFiltros.busca);
+  }, [searchParams, primeiroDiaDoMes]);
 
   // Atualizar URL com novos filtros
   const updateFilters = useCallback(
