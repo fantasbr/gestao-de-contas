@@ -25,10 +25,10 @@ export function ContaPagaDetailClient({ conta, canEdit }: ContaPagaDetailClientP
 
   const handleDelete = async () => {
     if (!confirm('Tem certeza que deseja excluir este registro de conta paga?')) return;
-    
+
     setIsDeleting(true);
     const result = await excluirContaPaga(conta.id);
-    
+
     if (result?.error) {
       toast.error(result.error);
       setIsDeleting(false);
@@ -49,7 +49,7 @@ export function ContaPagaDetailClient({ conta, canEdit }: ContaPagaDetailClientP
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
             </Button>
-            
+
             {canEdit && (
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setIsEditModalOpen(true)}>
@@ -87,7 +87,7 @@ export function ContaPagaDetailClient({ conta, canEdit }: ContaPagaDetailClientP
                 )}
               </div>
             </div>
-            
+
             <div className="text-right bg-primary/5 p-4 rounded-xl border border-primary/20">
               <p className="text-sm font-medium text-muted-foreground mb-1">Valor Pago</p>
               <p className="text-3xl font-bold text-green-600">
@@ -117,7 +117,7 @@ export function ContaPagaDetailClient({ conta, canEdit }: ContaPagaDetailClientP
                     <p className="font-semibold text-lg">{conta.beneficiario_nome || 'Não especificado'}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-4">
                   <div className="p-2 bg-secondary/20 rounded-lg text-secondary-foreground">
                     <User className="h-5 w-5" />
@@ -147,7 +147,7 @@ export function ContaPagaDetailClient({ conta, canEdit }: ContaPagaDetailClientP
                       <p className="font-medium">{conta.valor_documento ? formatCurrency(conta.valor_documento) : '-'}</p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4 border-t pt-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Juros e Multas</p>
@@ -200,8 +200,8 @@ export function ContaPagaDetailClient({ conta, canEdit }: ContaPagaDetailClientP
                     </div>
                     {/* Optional PDF preview if url is a direct link to an image or embeddable pdf */}
                     <div className="w-full h-[600px] border rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-                      <iframe 
-                        src={`${conta.url_pdf}#view=FitH`} 
+                      <iframe
+                        src={`${conta.url_pdf}#view=FitH`}
                         className="w-full h-full"
                         title="Visualização do PDF"
                       />

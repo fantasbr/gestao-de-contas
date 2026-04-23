@@ -85,7 +85,7 @@ export function ContaPagaEditModal({
 
   const onSubmit = async (data: EditFormData) => {
     setIsSubmitting(true);
-    
+
     // Convert empty strings to null for optional logic
     const payload = Object.fromEntries(
       Object.entries(data).map(([key, value]) => [key, value === '' ? null : value])
@@ -135,41 +135,41 @@ export function ContaPagaEditModal({
 
             <div className="space-y-2">
               <Label htmlFor="valor_documento">Valor Documento</Label>
-              <Input 
-                type="number" 
-                step="0.01" 
-                id="valor_documento" 
-                {...form.register('valor_documento')} 
+              <Input
+                type="number"
+                step="0.01"
+                id="valor_documento"
+                {...form.register('valor_documento')}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="valor_pago">Valor Pago</Label>
-              <Input 
-                type="number" 
-                step="0.01" 
-                id="valor_pago" 
-                {...form.register('valor_pago')} 
+              <Input
+                type="number"
+                step="0.01"
+                id="valor_pago"
+                {...form.register('valor_pago')}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="juros_multa">Juros/Multa</Label>
-              <Input 
-                type="number" 
-                step="0.01" 
-                id="juros_multa" 
-                {...form.register('juros_multa')} 
+              <Input
+                type="number"
+                step="0.01"
+                id="juros_multa"
+                {...form.register('juros_multa')}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="desconto_abatimento">Desconto</Label>
-              <Input 
-                type="number" 
-                step="0.01" 
-                id="desconto_abatimento" 
-                {...form.register('desconto_abatimento')} 
+              <Input
+                type="number"
+                step="0.01"
+                id="desconto_abatimento"
+                {...form.register('desconto_abatimento')}
               />
             </div>
 

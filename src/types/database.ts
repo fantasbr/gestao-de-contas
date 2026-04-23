@@ -267,7 +267,9 @@ export interface Database {
           created_at: string | null;
           tipo: TipoDespesa | null;
           identificador: string | null;
+          descricao: string | null;
         };
+
         Insert: {
           id?: number;
           beneficiario_nome?: string | null;
@@ -283,6 +285,7 @@ export interface Database {
           created_at?: string | null;
           tipo?: TipoDespesa | null;
           identificador?: string | null;
+          descricao?: string | null;
         };
         Update: {
           id?: number;
@@ -299,6 +302,7 @@ export interface Database {
           created_at?: string | null;
           tipo?: TipoDespesa | null;
           identificador?: string | null;
+          descricao?: string | null;
         };
         Relationships: [];
       };

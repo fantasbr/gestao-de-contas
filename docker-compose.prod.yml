@@ -3,7 +3,7 @@ version: "3.8"
 
 services:
   contas_app:
-    image: angelomoreirafilho/gestao-contas:${IMAGE_TAG:-0.1.7}
+    image: angelomoreirafilho/gestao-contas:${IMAGE_TAG:-0.1.16}
     
     networks:
       - BrancaNet

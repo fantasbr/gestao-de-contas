@@ -89,7 +89,7 @@ export async function excluirContaPaga(id: number | string) {
     }
 
     revalidatePath('/contas-pagas');
-    
+
     return { success: true };
   } catch (error: any) {
     console.error('Erro ao excluir:', error);

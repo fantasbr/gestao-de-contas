@@ -183,7 +183,7 @@ export function ContasPagasClient({
                   className="pl-9"
                 />
               </div>
-              
+
               <Select
                 value={filtros.tipo}
                 onValueChange={(value) => updateFilters({ tipo: value === 'todos' ? '' : value })}
@@ -197,7 +197,7 @@ export function ContasPagasClient({
                   <SelectItem value="Variável">Variável</SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <div className="flex gap-2 items-center">
                 <span className="text-sm whitespace-nowrap">Pgto:</span>
                 <Input
@@ -215,7 +215,7 @@ export function ContasPagasClient({
                 />
               </div>
 
-               <div className="flex gap-2 items-center">
+              <div className="flex gap-2 items-center">
                 <span className="text-sm whitespace-nowrap">Venc:</span>
                 <Input
                   type="date"

@@ -459,7 +459,7 @@ export async function queryContaPaga(id: string): Promise<QueryResult<any>> {
 export async function queryEstatisticasContasPagas(filtros: FiltrosContasPagas = {}): Promise<QueryResult<any>> {
   try {
     const supabase = await createClient();
-    
+
     // Total numbers
     let query = supabase
       .from('contaspagas')
