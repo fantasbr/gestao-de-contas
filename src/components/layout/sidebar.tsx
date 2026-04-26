@@ -15,6 +15,7 @@ import {
   Settings,
   FileBarChart,
   LogOut,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -35,6 +36,12 @@ const menuItems = [
     title: 'Contas Pagas',
     href: '/contas-pagas',
     icon: BadgeCheck,
+    roles: ['admin', 'atendente'],
+  },
+  {
+    title: 'Conciliação',
+    href: '/conciliacao',
+    icon: ArrowLeftRight,
     roles: ['admin', 'atendente'],
   },
   {

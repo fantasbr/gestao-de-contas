@@ -82,6 +82,18 @@ export function NovaContaClient({ lookup }: NovaContaClientProps) {
         const formDataUpload = new FormData();
         formDataUpload.append('file', file);
         formDataUpload.append('tipo', 'contas');
+        formDataUpload.append('descricao', formData.descricao);
+        formDataUpload.append('valor', formData.valor);
+        formDataUpload.append('data_vencimento', formData.data_vencimento);
+
+        if (formData.fornecedor_id) formDataUpload.append('fornecedor_id', formData.fornecedor_id);
+        if (formData.favorecido_nome) formDataUpload.append('favorecido_nome', formData.favorecido_nome);
+        if (formData.favorecido_cnpj_cpf) formDataUpload.append('favorecido_documento', formData.favorecido_cnpj_cpf);
+        if (formData.empresa_pagadora_id) formDataUpload.append('empresa_pagadora_id', formData.empresa_pagadora_id);
+        if (formData.categoria_id) formDataUpload.append('categoria_id', formData.categoria_id);
+        if (formData.linha_digitavel) formDataUpload.append('linha_digitavel', formData.linha_digitavel);
+        if (formData.codigo_barras) formDataUpload.append('codigo_barras', formData.codigo_barras);
+        if (formData.observacoes) formDataUpload.append('observacoes', formData.observacoes);
 
         const response = await fetch('/api/upload', {
           method: 'POST',

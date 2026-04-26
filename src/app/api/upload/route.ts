@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+const optionalContaFields = [
+  'fornecedor_id',
+  'favorecido_nome',
+  'favorecido_documento',
+  'empresa_pagadora_id',
+  'categoria_id',
+  'linha_digitavel',
+  'codigo_barras',
+  'observacoes',
+] as const;
+
 // POST /api/upload
 // Recebe arquivo, converte para base64 e envia para o webhook (n8n)
 export async function POST(request: NextRequest) {
@@ -9,9 +20,19 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
     const tipo = formData.get('tipo') as string || 'contas';
     const conta_id = formData.get('conta_id') as string | null;
+    const descricao = String(formData.get('descricao') || '').trim();
+    const valor = String(formData.get('valor') || '').trim();
+    const data_vencimento = String(formData.get('data_vencimento') || '').trim();
 
     if (!file) {
       return NextResponse.json({ error: 'Nenhum arquivo enviado' }, { status: 400 });
+    }
+
+    if (tipo === 'contas' && (!descricao || !valor || !data_vencimento)) {
+      return NextResponse.json(
+        { error: 'Campos obrigatórios ausentes para contas: descricao, valor e data_vencimento' },
+        { status: 400 }
+      );
     }
 
     // Validar tipos de arquivo conforme o tipo
@@ -78,12 +99,28 @@ export async function POST(request: NextRequest) {
       .single();
 
     // Preparar payload com arquivo em base64
+    const dados: Record<string, string> = {};
+    if (tipo === 'contas') {
+      dados.descricao = descricao;
+      dados.valor = valor;
+      dados.data_vencimento = data_vencimento;
+
+      for (const field of optionalContaFields) {
+        const rawValue = formData.get(field);
+        const value = typeof rawValue === 'string' ? rawValue.trim() : '';
+        if (value) {
+          dados[field] = value;
+        }
+      }
+    }
+
     const payload: Record<string, any> = {
       nome_evento: nomeWebhook,
       arquivo_base64: base64,
       mime_type: file.type,
       nome_arquivo: file.name,
       tipo,
+      ...(Object.keys(dados).length > 0 && { dados }),
       timestamp: new Date().toISOString(),
     };
 

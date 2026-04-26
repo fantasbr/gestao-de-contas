@@ -27,6 +27,7 @@ import {
   Pencil,
   FileSearch,
   Building,
+  Link2Off,
 } from 'lucide-react';
 import {
   Dialog,
@@ -41,6 +42,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/layout';
 import { marcarConferido, registrarPagamento, excluirConta, atualizarConta } from '@/actions/contas';
+import { desvincularConciliacao } from '@/actions/conciliacao';
 import {
   Select,
   SelectContent,
@@ -78,6 +80,7 @@ interface Conta {
   favorecido_cnpj_cpf?: string;
   created_at: string;
   updated_at: string;
+  conta_paga_id?: number | null;
   fornecedor?: {
     id: string;
     nome: string;
@@ -89,6 +92,10 @@ interface Conta {
     cor?: string;
   };
   pago_por?: string;
+  empresa?: {
+    id_empresa: number;
+    nome: string;
+  };
 }
 
 interface ContaDetailClientProps {
@@ -118,6 +125,10 @@ export function ContaDetailClient({
   const [dataPagamento, setDataPagamento] = useState(new Date().toISOString().split('T')[0]);
   const [comprovante, setComprovante] = useState<File | null>(null);
   const [pagarLoading, setPagarLoading] = useState(false);
+
+  // Estados para Desvincular
+  const [showDesvincularDialog, setShowDesvincularDialog] = useState(false);
+  const [desvincularLoading, setDesvincularLoading] = useState(false);
 
   // Estados para Edição
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -239,6 +250,25 @@ export function ContaDetailClient({
     }
   };
 
+  const handleDesvincular = async () => {
+    setDesvincularLoading(true);
+    try {
+      const result = await desvincularConciliacao(conta.id);
+      if (result.success) {
+        toast.success('Vínculo desfeito com sucesso!');
+        setShowDesvincularDialog(false);
+        router.refresh();
+      } else {
+        toast.error(result.error || 'Erro ao desvincular conta');
+      }
+    } catch (error) {
+      console.error('Erro ao desvincular conta:', error);
+      toast.error('Erro ao desvincular conta');
+    } finally {
+      setDesvincularLoading(false);
+    }
+  };
+
   const handleUpdateConta = async () => {
     setIsSubmitting(true);
     try {
@@ -298,6 +328,17 @@ export function ContaDetailClient({
             <p className="text-muted-foreground">{conta.descricao}</p>
           </div>
           <div className="flex gap-2">
+            {podeEditar && conta.conta_paga_id && (
+              <Button 
+                variant="outline" 
+                onClick={() => setShowDesvincularDialog(true)}
+                className="text-destructive hover:bg-destructive/10 border-destructive/20 hover:border-destructive/30"
+              >
+                <Link2Off className="h-4 w-4 mr-2" />
+                Desfazer Conciliação
+              </Button>
+            )}
+            
             {podeEditar ? (
               <>
                 <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
@@ -597,6 +638,31 @@ export function ContaDetailClient({
                 </DialogContent>
               </Dialog>
             )}
+
+            {/* Dialog Desvincular */}
+            <Dialog open={showDesvincularDialog} onOpenChange={setShowDesvincularDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Link2Off className="h-5 w-5 text-destructive" />
+                    Desfazer Conciliação
+                  </DialogTitle>
+                  <DialogDescription>
+                    Tem certeza que deseja desfazer a conciliação desta conta? 
+                    O status voltará para <strong>Pendente</strong> ou <strong>Vencido</strong> e o comprovante será removido.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowDesvincularDialog(false)} disabled={desvincularLoading}>
+                    Cancelar
+                  </Button>
+                  <Button variant="destructive" onClick={handleDesvincular} disabled={desvincularLoading}>
+                    {desvincularLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Desfazer Vínculo
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -665,6 +731,15 @@ export function ContaDetailClient({
                   <Badge style={{ backgroundColor: conta.categoria.cor || '#6B7280' }}>
                     {conta.categoria.nome}
                   </Badge>
+                </div>
+              )}
+              {conta.empresa && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground flex items-center gap-2">
+                    <Building className="h-4 w-4" />
+                    Empresa Pagadora
+                  </span>
+                  <span className="font-medium">{conta.empresa.nome}</span>
                 </div>
               )}
             </CardContent>
@@ -778,12 +853,26 @@ export function ContaDetailClient({
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" asChild className="h-8">
-                    <a href={conta.url_comprovante_pagamento} target="_blank" rel="noopener noreferrer">
-                      <FileSearch className="h-3.5 w-3.5 mr-2" />
-                      Visualizar
-                    </a>
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" asChild className="h-8">
+                      <a href={conta.url_comprovante_pagamento} target="_blank" rel="noopener noreferrer">
+                        <FileSearch className="h-3.5 w-3.5 mr-2" />
+                        Visualizar
+                      </a>
+                    </Button>
+                    {podeEditar && conta.conta_paga_id && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        title="Desfazer Vínculo"
+                        onClick={() => setShowDesvincularDialog(true)}
+                      >
+                        <Link2Off className="h-4 w-4" />
+                        <span className="sr-only">Desfazer Vínculo</span>
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>

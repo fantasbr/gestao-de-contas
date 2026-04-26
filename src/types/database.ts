@@ -192,6 +192,7 @@ export interface Database {
           webhook_confirmado_em: string | null;
           webhook_id_envio: string | null;
           deleted_at: string | null;
+          conta_paga_id: number | null;
         };
         Insert: {
           id?: string;
@@ -247,6 +248,7 @@ export interface Database {
           webhook_confirmado_em?: string | null;
           webhook_id_envio?: string | null;
           deleted_at?: string | null;
+          conta_paga_id?: number | null;
         };
         Relationships: [];
       };
@@ -268,6 +270,8 @@ export interface Database {
           tipo: TipoDespesa | null;
           identificador: string | null;
           descricao: string | null;
+          conciliado: boolean | null;
+          conta_pagar_id: string | null;
         };
 
         Insert: {
@@ -286,6 +290,8 @@ export interface Database {
           tipo?: TipoDespesa | null;
           identificador?: string | null;
           descricao?: string | null;
+          conciliado?: boolean | null;
+          conta_pagar_id?: string | null;
         };
         Update: {
           id?: number;
@@ -303,6 +309,8 @@ export interface Database {
           tipo?: TipoDespesa | null;
           identificador?: string | null;
           descricao?: string | null;
+          conciliado?: boolean | null;
+          conta_pagar_id?: string | null;
         };
         Relationships: [];
       };

@@ -510,3 +510,38 @@ export async function queryEstatisticasContasPagas(filtros: FiltrosContasPagas =
   }
 }
 
+
+// ============================================
+// QUERIES - CONCILIACAO
+// ============================================
+
+export async function queryContasPagarPendentes(): Promise<QueryListResult<any>> {
+  try {
+    const supabase = await createClient();
+    const { data, error, count } = await supabase
+      .from('contas_pagar')
+      .select(`*, fornecedor:fornecedores(id, nome), categoria:categorias(id, nome, cor), empresa:empresas(id_empresa, nome)`, { count: 'exact' })
+      .is('deleted_at', null)
+      .in('status', ['pendente', 'vencido'])
+      .order('data_vencimento', { ascending: true });
+    if (error) return { data: [], total: 0, error: error.message };
+    return { data: data || [], total: count || 0, error: null };
+  } catch (err: any) {
+    return { data: [], total: 0, error: err.message };
+  }
+}
+
+export async function queryContasPagasNaoConciliadas(): Promise<QueryListResult<any>> {
+  try {
+    const supabase = await createClient();
+    const { data, error, count } = await supabase
+      .from('contaspagas')
+      .select('*', { count: 'exact' })
+      .or('conciliado.is.null,conciliado.eq.false')
+      .order('data_pagamento', { ascending: false });
+    if (error) return { data: [], total: 0, error: error.message };
+    return { data: data || [], total: count || 0, error: null };
+  } catch (err: any) {
+    return { data: [], total: 0, error: err.message };
+  }
+}
