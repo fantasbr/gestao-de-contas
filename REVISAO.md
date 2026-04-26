@@ -6,7 +6,19 @@
 
 ---
 
+---
+
 ## 0. ESPECIFICAÇÕES TÉCNICAS ATUAIS (MIGRAÇÃO ABRIL 2026)
+
+### 0.2 Módulo de Conciliação Financeira ✅ CONCLUÍDO
+**Data:** 26 de Abril de 2026
+
+**Mudanças Principais:**
+- **Página de Conciliação:** Interface de duas colunas para vínculo manual entre `contas_pagar` e `contaspagas`.
+- **Score de Similaridade:** Algoritmo no frontend para sugerir vínculos baseados em Valor (40%), Data (30%) e Nome (30%).
+- **Server Actions:** Implementação de `vincularConciliacao` e `desvincularConciliacao` com suporte a logs de auditoria.
+- **Banco de Dados:** Migration 005 (Fix RLS) e 006 (Campos de Conciliação).
+- **UI/UX:** Botões de desvínculo rápido na tela de detalhes e score badges coloridos.
 
 ### 0.1 Upgrade Next.js 16 & React 19 ✅ CONCLUÍDO
 **Data:** 06 de Abril de 2026
