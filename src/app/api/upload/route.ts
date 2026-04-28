@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 const optionalContaFields = [
   'fornecedor_id',
   'favorecido_nome',
-  'favorecido_documento',
+  'favorecido_cnpj_cpf',
   'empresa_pagadora_id',
   'categoria_id',
   'linha_digitavel',

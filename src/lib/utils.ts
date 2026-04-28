@@ -12,15 +12,28 @@ export function formatCurrency(value: number): string {
   }).format(value);
 }
 
-export function formatDate(date: Date | string): string {
-  return new Intl.DateTimeFormat("pt-BR").format(new Date(date));
+export function isValidDate(date: unknown): date is string {
+  if (!date || typeof date !== 'string') return false;
+  if (date.trim() === '') return false;
+  const parsed = new Date(date);
+  return !isNaN(parsed.getTime());
 }
 
-export function formatDateTime(date: Date | string): string {
+export function formatDate(date: Date | string | null | undefined): string {
+  if (!isValidDate(date)) return '-';
+  // Adiciona hora para evitar problemas de timezone
+  const dateStr = date.includes('T') ? date : date + 'T12:00:00';
+  return new Intl.DateTimeFormat("pt-BR").format(new Date(dateStr));
+}
+
+export function formatDateTime(date: Date | string | null | undefined): string {
+  if (!isValidDate(date)) return '-';
+  // Adiciona hora para evitar problemas de timezone
+  const dateStr = date.includes('T') ? date : date + 'T12:00:00';
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
-  }).format(new Date(date));
+  }).format(new Date(dateStr));
 }
 
 // ============================================

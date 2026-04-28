@@ -94,11 +94,7 @@ export async function POST(request: NextRequest) {
       categoria_id: typeof body.categoria_id === 'string' ? body.categoria_id : null,
       favorecido_nome: typeof body.favorecido_nome === 'string' ? body.favorecido_nome : null,
       favorecido_cnpj_cpf:
-        typeof body.favorecido_documento === 'string'
-          ? body.favorecido_documento
-          : typeof body.favorecido_cnpj_cpf === 'string'
-            ? body.favorecido_cnpj_cpf
-            : null,
+          typeof body.favorecido_cnpj_cpf === 'string' ? body.favorecido_cnpj_cpf : null,
       numero_documento: typeof body.numero_documento === 'string' ? body.numero_documento : null,
       linha_digitavel: typeof body.linha_digitavel === 'string' ? body.linha_digitavel : null,
       codigo_barras: typeof body.codigo_barras === 'string' ? body.codigo_barras : null,

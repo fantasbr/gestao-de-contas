@@ -129,6 +129,61 @@ export async function queryContas(
 }
 
 /**
+ * Calcula a soma total dos valores das contas filtradas
+ */
+export async function queryTotalValorContas(filtros: FiltrosContas = {}): Promise<number> {
+  try {
+    const supabase = await createClient();
+
+    let query = supabase
+      .from('contas_pagar')
+      .select('valor')
+      .is('deleted_at', null);
+
+    // Aplicar filtros
+    if (filtros.status) {
+      query = query.eq('status', filtros.status);
+    }
+    if (filtros.status_processamento) {
+      query = query.eq('status_processamento', filtros.status_processamento);
+    }
+    if (filtros.conferido !== undefined) {
+      query = query.eq('conferido', filtros.conferido);
+    }
+    if (filtros.fornecedor_id) {
+      query = query.eq('fornecedor_id', filtros.fornecedor_id);
+    }
+    if (filtros.categoria_id) {
+      query = query.eq('categoria_id', filtros.categoria_id);
+    }
+    if (filtros.empresa_id) {
+      query = query.eq('empresa_pagadora_id', filtros.empresa_id);
+    }
+    if (filtros.data_inicio) {
+      query = query.gte('data_vencimento', filtros.data_inicio);
+    }
+    if (filtros.data_fim) {
+      query = query.lte('data_vencimento', filtros.data_fim);
+    }
+    if (filtros.busca) {
+      query = query.or(`descricao.ilike.%${filtros.busca}%,favorecido_nome.ilike.%${filtros.busca}%`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Erro ao calcular soma das contas:', error);
+      return 0;
+    }
+
+    return data?.reduce((acc, curr) => acc + Number(curr.valor || 0), 0) || 0;
+  } catch (err: any) {
+    console.error('Erro ao calcular soma das contas:', err);
+    return 0;
+  }
+}
+
+/**
  * Busca conta por ID
  */
 export async function queryConta(id: string): Promise<QueryResult<any>> {

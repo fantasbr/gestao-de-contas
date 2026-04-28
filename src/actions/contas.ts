@@ -20,7 +20,7 @@ export interface ContaInput {
   data_vencimento: string;
   fornecedor_id?: string;
   favorecido_nome?: string;
-  favorecido_documento?: string;
+  favorecido_cnpj_cpf?: string;
   categoria_id?: string;
   empresa_pagadora_id?: number;
   observacoes?: string;
@@ -96,7 +96,7 @@ export async function criarConta(formData: FormData): Promise<ActionResult> {
     data_vencimento: formData.get('data_vencimento') as string,
     fornecedor_id: (formData.get('fornecedor_id') as string) || undefined,
     favorecido_nome: (formData.get('favorecido_nome') as string) || undefined,
-    favorecido_documento: (formData.get('favorecido_documento') as string) || undefined,
+    favorecido_cnpj_cpf: (formData.get('favorecido_cnpj_cpf') as string) || undefined,
     categoria_id: (formData.get('categoria_id') as string) || undefined,
     empresa_pagadora_id: Number(formData.get('empresa_pagadora_id')) || undefined,
     observacoes: (formData.get('observacoes') as string) || undefined,
@@ -166,12 +166,7 @@ export async function criarContaJson(data: Record<string, unknown>): Promise<Cre
     fornecedor_id: typeof data.fornecedor_id === 'string' ? data.fornecedor_id : null,
     categoria_id: typeof data.categoria_id === 'string' ? data.categoria_id : null,
     favorecido_nome: typeof data.favorecido_nome === 'string' ? data.favorecido_nome : null,
-    favorecido_cnpj_cpf:
-      typeof data.favorecido_documento === 'string'
-        ? data.favorecido_documento
-        : typeof data.favorecido_cnpj_cpf === 'string'
-          ? data.favorecido_cnpj_cpf
-          : null,
+    favorecido_cnpj_cpf: typeof data.favorecido_cnpj_cpf === 'string' ? data.favorecido_cnpj_cpf : null,
     numero_documento: typeof data.numero_documento === 'string' ? data.numero_documento : null,
     linha_digitavel: typeof data.linha_digitavel === 'string' ? data.linha_digitavel : null,
     codigo_barras: typeof data.codigo_barras === 'string' ? data.codigo_barras : null,

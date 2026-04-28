@@ -88,7 +88,7 @@ export function NovaContaClient({ lookup }: NovaContaClientProps) {
 
         if (formData.fornecedor_id) formDataUpload.append('fornecedor_id', formData.fornecedor_id);
         if (formData.favorecido_nome) formDataUpload.append('favorecido_nome', formData.favorecido_nome);
-        if (formData.favorecido_cnpj_cpf) formDataUpload.append('favorecido_documento', formData.favorecido_cnpj_cpf);
+        if (formData.favorecido_cnpj_cpf) formDataUpload.append('favorecido_cnpj_cpf', formData.favorecido_cnpj_cpf);
         if (formData.empresa_pagadora_id) formDataUpload.append('empresa_pagadora_id', formData.empresa_pagadora_id);
         if (formData.categoria_id) formDataUpload.append('categoria_id', formData.categoria_id);
         if (formData.linha_digitavel) formDataUpload.append('linha_digitavel', formData.linha_digitavel);
@@ -126,7 +126,7 @@ export function NovaContaClient({ lookup }: NovaContaClientProps) {
 
         if (formData.fornecedor_id) formDataToSend.append('fornecedor_id', formData.fornecedor_id);
         if (formData.favorecido_nome) formDataToSend.append('favorecido_nome', formData.favorecido_nome);
-        if (formData.favorecido_cnpj_cpf) formDataToSend.append('favorecido_documento', formData.favorecido_cnpj_cpf);
+        if (formData.favorecido_cnpj_cpf) formDataToSend.append('favorecido_cnpj_cpf', formData.favorecido_cnpj_cpf);
         if (formData.empresa_pagadora_id) formDataToSend.append('empresa_pagadora_id', formData.empresa_pagadora_id);
         if (formData.categoria_id) formDataToSend.append('categoria_id', formData.categoria_id);
         if (formData.linha_digitavel) formDataToSend.append('linha_digitavel', formData.linha_digitavel);

@@ -142,6 +142,20 @@ export function ContaDetailClient({
   const [comprovante, setComprovante] = useState<File | null>(null);
   const [pagarLoading, setPagarLoading] = useState(false);
 
+  // URL de retorno preservando filtros
+  const backUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (filtros) {
+      Object.entries(filtros).forEach(([key, value]) => {
+        if (value && value !== 'todos') {
+          params.set(key, value as string);
+        }
+      });
+    }
+    const qs = params.toString();
+    return qs ? `/contas?${qs}` : '/contas';
+  }, [filtros]);
+
   // Estados para Desvincular
   const [showDesvincularDialog, setShowDesvincularDialog] = useState(false);
   const [desvincularLoading, setDesvincularLoading] = useState(false);
@@ -260,7 +274,7 @@ export function ContaDetailClient({
     const result = await excluirConta(conta.id);
     if (result.success) {
       toast.success('Conta excluída!');
-      router.push('/contas');
+      router.push(backUrl);
     } else {
       toast.error(result.error || 'Erro ao excluir conta');
     }
@@ -334,8 +348,10 @@ export function ContaDetailClient({
       <Header />
       <div className="flex-1 p-6 overflow-auto">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="icon" asChild>
+            <Link href={backUrl}>
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
           </Button>
           <div className="flex-1">
             <h1 className="text-3xl font-bold">Detalhes da Conta</h1>

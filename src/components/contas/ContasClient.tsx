@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useTransition } from 'react';
+import { useState, useCallback, useTransition, useEffect, useMemo } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -63,7 +63,19 @@ interface ContasClientProps {
   lookup: LookupData;
   initialPage: number;
   limit: number;
+  initialTotalValor: number;
 }
+
+const FILTROS_PADRAO: Filtros = {
+  status: '',
+  conferido: '',
+  fornecedor_id: '',
+  categoria_id: '',
+  empresa_id: '',
+  data_inicio: '',
+  data_fim: '',
+  busca: '',
+};
 
 export function ContasClient({
   initialContas,
@@ -71,71 +83,81 @@ export function ContasClient({
   lookup,
   initialPage,
   limit,
+  initialTotalValor,
 }: ContasClientProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const [contas] = useState<Conta[]>(initialContas);
-  const [total] = useState(initialTotal);
-  const [page] = useState(initialPage);
-
-  const [filtros, setFiltros] = useState<Filtros>({
+  // Sincronizar filtros com URL
+  const filtros = useMemo<Filtros>(() => ({
     status: searchParams.get('status') || '',
     conferido: searchParams.get('conferido') || '',
-    fornecedor_id: searchParams.get('fornecedor') || '',
-    categoria_id: searchParams.get('categoria') || '',
-    empresa_id: searchParams.get('empresa') || '',
+    fornecedor_id: searchParams.get('fornecedor_id') || '',
+    categoria_id: searchParams.get('categoria_id') || '',
+    empresa_id: searchParams.get('empresa_id') || '',
     data_inicio: searchParams.get('data_inicio') || '',
     data_fim: searchParams.get('data_fim') || '',
     busca: searchParams.get('busca') || '',
-  });
+  }), [searchParams]);
+
+  const page = parseInt(searchParams.get('page') || String(initialPage));
+  
+  // Usar props do servidor E filtros da URL para exibição
+  const [contas, setContas] = useState<Conta[]>(initialContas);
+  const [total, setTotal] = useState(initialTotal);
+  const [totalValor, setTotalValor] = useState(initialTotalValor);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+
+  // Atualizar dados quando initialContas mudar (re-render do servidor)
+  useEffect(() => {
+    setContas(initialContas);
+    setTotal(initialTotal);
+    setTotalValor(initialTotalValor);
+    setCurrentPage(page);
+  }, [initialContas, initialTotal, initialTotalValor, page]);
 
   const [buscaInput, setBuscaInput] = useState(filtros.busca);
 
   // Atualizar URL com novos filtros
   const updateFilters = useCallback(
     (newFiltros: Partial<Filtros>) => {
-      const updated = { ...filtros, ...newFiltros };
-      setFiltros(updated);
-
-      const params = new URLSearchParams();
-      Object.entries(updated).forEach(([key, value]) => {
-        if (value) {
+      const params = new URLSearchParams(searchParams.toString());
+      
+      Object.entries(newFiltros).forEach(([key, value]) => {
+        if (value && value !== 'todos') {
           params.set(key, value);
+        } else {
+          params.delete(key);
         }
       });
+
+      // Reset para página 1 ao mudar filtros
+      params.delete('page');
 
       startTransition(() => {
         router.push(`${pathname}?${params.toString()}`);
       });
     },
-    [filtros, pathname, router]
+    [pathname, router, searchParams]
   );
 
   // Debounce para busca
-  const handleBuscaChange = (value: string) => {
-    setBuscaInput(value);
-    // Debounce de 300ms
-    setTimeout(() => {
-      updateFilters({ busca: value });
-    }, 300);
-  };
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (buscaInput !== filtros.busca) {
+        updateFilters({ busca: buscaInput });
+      }
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [buscaInput]);
 
   const limparFiltros = () => {
-    setFiltros({
-      status: '',
-      conferido: '',
-      fornecedor_id: '',
-      categoria_id: '',
-      empresa_id: '',
-      data_inicio: '',
-      data_fim: '',
-      busca: '',
-    });
     setBuscaInput('');
-    router.push(pathname);
+    startTransition(() => {
+      router.push(pathname);
+    });
   };
 
   return (
@@ -144,7 +166,12 @@ export function ContasClient({
       <div className="flex-1 p-6 overflow-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Contas a Pagar</h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-3xl font-bold">Contas a Pagar</h1>
+              <Badge variant="secondary" className="text-lg px-3 py-1 bg-primary/10 text-primary border-primary/20">
+                {formatCurrency(totalValor)}
+              </Badge>
+            </div>
             <p className="text-muted-foreground mt-1">
               {total} conta(s) encontrada(s)
             </p>
@@ -166,7 +193,7 @@ export function ContasClient({
                 <Input
                   placeholder="Buscar conta..."
                   value={buscaInput}
-                  onChange={(e) => handleBuscaChange(e.target.value)}
+                  onChange={(e) => setBuscaInput(e.target.value)}
                   className="pl-9"
                 />
               </div>
@@ -282,7 +309,7 @@ export function ContasClient({
                       </TableCell>
                       <TableCell>
                         <Link
-                          href={`/contas/${conta.id}`}
+                          href={`/contas/${conta.id}?${searchParams.toString()}`}
                           className="font-medium hover:underline"
                         >
                           {conta.descricao}
@@ -327,17 +354,19 @@ export function ContasClient({
         {total > limit && (
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-muted-foreground">
-              Mostrando {(page - 1) * limit + 1} a {Math.min(page * limit, total)} de {total}
+              Mostrando {(currentPage - 1) * limit + 1} a {Math.min(currentPage * limit, total)} de {total}
             </p>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                disabled={page === 1}
+                disabled={currentPage === 1}
                 onClick={() => {
                   const params = new URLSearchParams(searchParams.toString());
-                  params.set('page', String(page - 1));
-                  router.push(`${pathname}?${params.toString()}`);
+                  params.set('page', String(currentPage - 1));
+                  startTransition(() => {
+                    router.push(`${pathname}?${params.toString()}`);
+                  });
                 }}
               >
                 Anterior
@@ -345,11 +374,13 @@ export function ContasClient({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={page * limit >= total}
+                disabled={currentPage * limit >= total}
                 onClick={() => {
                   const params = new URLSearchParams(searchParams.toString());
-                  params.set('page', String(page + 1));
-                  router.push(`${pathname}?${params.toString()}`);
+                  params.set('page', String(currentPage + 1));
+                  startTransition(() => {
+                    router.push(`${pathname}?${params.toString()}`);
+                  });
                 }}
               >
                 Próxima
