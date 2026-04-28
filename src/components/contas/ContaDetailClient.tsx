@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -98,6 +98,18 @@ interface Conta {
   };
 }
 
+interface Filtros {
+  status: string;
+  conferido: string;
+  fornecedor_id: string;
+  categoria_id: string;
+  empresa_id: string;
+  data_inicio: string;
+  data_fim: string;
+  busca: string;
+  page: string;
+}
+
 interface ContaDetailClientProps {
   conta?: Conta | null;
   podeEditar?: boolean;
@@ -108,6 +120,7 @@ interface ContaDetailClientProps {
     empresas: { id_empresa: number; nome: string }[];
     categorias: { id: string; nome: string }[];
   };
+  filtros?: Filtros;
 }
 
 export function ContaDetailClient({
@@ -116,8 +129,11 @@ export function ContaDetailClient({
   podeExcluir = false,
   conferidoPorNome,
   lookup,
+  filtros,
 }: ContaDetailClientProps) {
   const router = useRouter();
+  // Usar searchParams apenas se filtros não foram passados (fallback)
+  const searchParams = useSearchParams();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showConferirDialog, setShowConferirDialog] = useState(false);
   const [showPagarDialog, setShowPagarDialog] = useState(false);
@@ -278,7 +294,7 @@ export function ContaDetailClient({
         data_vencimento: editFormData.data_vencimento,
         fornecedor_id: editFormData.fornecedor_id || undefined,
         favorecido_nome: editFormData.favorecido_nome || undefined,
-        favorecido_documento: editFormData.favorecido_cnpj_cpf || undefined,
+        favorecido_cnpj_cpf: editFormData.favorecido_cnpj_cpf || undefined,
         categoria_id: editFormData.categoria_id || undefined,
         observacoes: editFormData.observacoes || undefined,
       };
@@ -318,10 +334,8 @@ export function ContaDetailClient({
       <Header />
       <div className="flex-1 p-6 overflow-auto">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/contas">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">
             <h1 className="text-3xl font-bold">Detalhes da Conta</h1>
