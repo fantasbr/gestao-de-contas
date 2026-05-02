@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { StatusBadge, ProcessamentoBadge } from '@/components/contas';
+import { StatusBadge } from '@/components/contas';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Plus, Search, FileText, CheckCircle } from 'lucide-react';
 import {
@@ -208,8 +208,6 @@ export function ContasClient({
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="pendente">Pendente</SelectItem>
                   <SelectItem value="pago">Pago</SelectItem>
-                  <SelectItem value="vencido">Vencido</SelectItem>
-                  <SelectItem value="cancelado">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
               <Select
@@ -300,50 +298,54 @@ export function ContasClient({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {contas.map((conta) => (
-                    <TableRow key={conta.id}>
-                      <TableCell>
-                        {conta.conferido && (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Link
-                          href={`/contas/${conta.id}?${searchParams.toString()}`}
-                          className="font-medium hover:underline"
-                        >
-                          {conta.descricao}
-                        </Link>
-                        {conta.categoria && (
-                          <Badge variant="outline" className="ml-2 text-xs">
-                            {conta.categoria.nome}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {conta.fornecedor?.nome || conta.favorecido_nome || '-'}
-                      </TableCell>
-                      <TableCell>{formatDate(conta.data_vencimento)}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(Number(conta.valor))}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <StatusBadge status={conta.status as any} />
-                          {conta.status_processamento !== 'processado' && (
-                            <ProcessamentoBadge status={conta.status_processamento as any} />
+                  {contas.map((conta) => {
+                    // Calcular status exibido: se pendente e já passou do vencimento, mostrar vencido
+                    const hoje = new Date().toISOString().split('T')[0];
+                    const statusExibido =
+                      conta.status === 'pendente' && conta.data_vencimento < hoje
+                        ? 'vencido'
+                        : conta.status;
+
+                    return (
+                      <TableRow key={conta.id}>
+                        <TableCell>
+                          {conta.conferido && (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {conta.conferido ? (
-                          <span className="text-green-600 text-sm">Sim</span>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">Não</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell>
+                          <Link
+                            href={`/contas/${conta.id}?${searchParams.toString()}`}
+                            className="font-medium hover:underline"
+                          >
+                            {conta.descricao}
+                          </Link>
+                          {conta.categoria && (
+                            <Badge variant="outline" className="ml-2 text-xs">
+                              {conta.categoria.nome}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {conta.fornecedor?.nome || conta.favorecido_nome || '-'}
+                        </TableCell>
+                        <TableCell>{formatDate(conta.data_vencimento)}</TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(Number(conta.valor))}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={statusExibido as any} />
+                        </TableCell>
+                        <TableCell>
+                          {conta.conferido ? (
+                            <span className="text-green-600 text-sm">Sim</span>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Não</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}

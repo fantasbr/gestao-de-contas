@@ -120,6 +120,40 @@ export async function criarConta(formData: FormData): Promise<ActionResult> {
     return { success: false, error: error.message };
   }
 
+  // Processar upload de arquivo (se houver)
+  const file = formData.get('file') as File | null;
+  if (file && file.size > 0) {
+    try {
+      const ext = file.name.split('.').pop() || 'pdf';
+      const fileName = `${conta.id}.${ext}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documentos_contas')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error('Erro ao fazer upload do arquivo:', uploadError);
+      } else if (uploadData) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('documentos_contas')
+          .getPublicUrl(fileName);
+          
+        // Atualizar a conta com a URL do documento
+        await supabase
+          .from('contas_pagar')
+          .update({ url_pdf_original: publicUrl })
+          .eq('id', conta.id);
+          
+        conta.url_pdf_original = publicUrl;
+      }
+    } catch (uploadEx) {
+      console.error('Exceção ao fazer upload do arquivo:', uploadEx);
+    }
+  }
+
   // Registrar log de auditoria (não bloqueia)
   supabase
     .from('contas_log')

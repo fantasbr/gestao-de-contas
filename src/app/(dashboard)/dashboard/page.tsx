@@ -8,21 +8,19 @@ import { queryEstatisticas, queryContas } from '@/lib/supabase/queries';
 import { DashboardClient } from '@/components/dashboard/DashboardClient';
 
 export default async function DashboardPage() {
-  // Carregar dados em paralelo
-  const [statsResult, contasResult] = await Promise.all([
-    queryEstatisticas(),
-    queryContas({}, 1, 5),
-  ]);
-
+  // Carregar estatísticas
+  const statsResult = await queryEstatisticas();
   const stats = statsResult.data || {
     total: 0,
     totalValor: 0,
     pendentes: 0,
     vencidas: 0,
     proximosVencimentos: 0,
+    pagoMesAnterior: 0,
+    totalMesAtual: 0,
+    pagoMesAtualAteHoje: 0,
+    pagoMesAnteriorAteHoje: 0,
   };
 
-  const contas = contasResult.data || [];
-
-  return <DashboardClient stats={stats} contas={contas} />;
+  return <DashboardClient stats={stats} />;
 }

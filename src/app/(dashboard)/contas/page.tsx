@@ -8,8 +8,17 @@ interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
+import { redirect } from 'next/navigation';
+
 export default async function ContasPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  
+  // Se não houver parâmetros, redirecionar para os padrões: status=pendente e data_inicio=01 do mês anterior
+  if (Object.keys(params).length === 0) {
+    const now = new Date();
+    const dataPadrao = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
+    redirect(`/contas?status=pendente&data_inicio=${dataPadrao}`);
+  }
   
   // Extrair filtros da URL - converter para o tipo esperado
   const filtros: FiltrosContas = {

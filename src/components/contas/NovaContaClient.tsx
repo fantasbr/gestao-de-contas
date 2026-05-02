@@ -62,11 +62,14 @@ export function NovaContaClient({ lookup }: NovaContaClientProps) {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEnviarIA = async () => {
+    if (!file) {
+      toast.error('Por favor, selecione um arquivo PDF para enviar para a IA');
+      return;
+    }
 
     if (!formData.descricao || !formData.valor || !formData.data_vencimento) {
-      toast.error('Preencha os campos obrigatórios');
+      toast.error('Preencha os campos obrigatórios (Descrição, Valor e Data de Vencimento)');
       return;
     }
 
@@ -75,78 +78,90 @@ export function NovaContaClient({ lookup }: NovaContaClientProps) {
       return;
     }
 
-    // Se tem arquivo PDF, enviar para processamento (n8n faria OCR)
-    if (file) {
-      setUploadLoading(true);
-      try {
-        const formDataUpload = new FormData();
-        formDataUpload.append('file', file);
-        formDataUpload.append('tipo', 'contas');
-        formDataUpload.append('descricao', formData.descricao);
-        formDataUpload.append('valor', formData.valor);
-        formDataUpload.append('data_vencimento', formData.data_vencimento);
+    setUploadLoading(true);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+      formDataUpload.append('tipo', 'contas');
+      formDataUpload.append('descricao', formData.descricao);
+      formDataUpload.append('valor', formData.valor);
+      formDataUpload.append('data_vencimento', formData.data_vencimento);
 
-        if (formData.fornecedor_id) formDataUpload.append('fornecedor_id', formData.fornecedor_id);
-        if (formData.favorecido_nome) formDataUpload.append('favorecido_nome', formData.favorecido_nome);
-        if (formData.favorecido_cnpj_cpf) formDataUpload.append('favorecido_cnpj_cpf', formData.favorecido_cnpj_cpf);
-        if (formData.empresa_pagadora_id) formDataUpload.append('empresa_pagadora_id', formData.empresa_pagadora_id);
-        if (formData.categoria_id) formDataUpload.append('categoria_id', formData.categoria_id);
-        if (formData.linha_digitavel) formDataUpload.append('linha_digitavel', formData.linha_digitavel);
-        if (formData.codigo_barras) formDataUpload.append('codigo_barras', formData.codigo_barras);
-        if (formData.observacoes) formDataUpload.append('observacoes', formData.observacoes);
+      if (formData.fornecedor_id) formDataUpload.append('fornecedor_id', formData.fornecedor_id);
+      if (formData.favorecido_nome) formDataUpload.append('favorecido_nome', formData.favorecido_nome);
+      if (formData.favorecido_cnpj_cpf) formDataUpload.append('favorecido_cnpj_cpf', formData.favorecido_cnpj_cpf);
+      if (formData.empresa_pagadora_id) formDataUpload.append('empresa_pagadora_id', formData.empresa_pagadora_id);
+      if (formData.categoria_id) formDataUpload.append('categoria_id', formData.categoria_id);
+      if (formData.linha_digitavel) formDataUpload.append('linha_digitavel', formData.linha_digitavel);
+      if (formData.codigo_barras) formDataUpload.append('codigo_barras', formData.codigo_barras);
+      if (formData.observacoes) formDataUpload.append('observacoes', formData.observacoes);
 
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formDataUpload,
-        });
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formDataUpload,
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (response.ok) {
-          toast.success('Arquivo enviado para processamento! A conta será cadastrada automaticamente após a extração dos dados.');
-          router.push('/contas');
-        } else {
-          toast.error(data.error || 'Erro ao processar arquivo');
-        }
-      } catch (error) {
-        console.error('Erro ao fazer upload:', error);
-        toast.error('Erro ao enviar arquivo para processamento');
-      } finally {
-        setUploadLoading(false);
+      if (response.ok) {
+        toast.success('Arquivo enviado para processamento! A conta será cadastrada automaticamente após a extração dos dados.');
+        router.push('/contas');
+      } else {
+        toast.error(data.error || 'Erro ao processar arquivo');
       }
-    } else {
-      // Criar conta via Server Action
-      setIsSubmitting(true);
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      toast.error('Erro ao enviar arquivo para processamento');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
 
-      try {
-        const formDataToSend = new FormData();
-        formDataToSend.append('descricao', formData.descricao);
-        formDataToSend.append('valor', formData.valor);
-        formDataToSend.append('data_vencimento', formData.data_vencimento);
+  const handleRegistrarManualmente = async () => {
+    if (!formData.descricao || !formData.valor || !formData.data_vencimento) {
+      toast.error('Preencha os campos obrigatórios (Descrição, Valor e Data de Vencimento)');
+      return;
+    }
 
-        if (formData.fornecedor_id) formDataToSend.append('fornecedor_id', formData.fornecedor_id);
-        if (formData.favorecido_nome) formDataToSend.append('favorecido_nome', formData.favorecido_nome);
-        if (formData.favorecido_cnpj_cpf) formDataToSend.append('favorecido_cnpj_cpf', formData.favorecido_cnpj_cpf);
-        if (formData.empresa_pagadora_id) formDataToSend.append('empresa_pagadora_id', formData.empresa_pagadora_id);
-        if (formData.categoria_id) formDataToSend.append('categoria_id', formData.categoria_id);
-        if (formData.linha_digitavel) formDataToSend.append('linha_digitavel', formData.linha_digitavel);
-        if (formData.codigo_barras) formDataToSend.append('codigo_barras', formData.codigo_barras);
-        if (formData.observacoes) formDataToSend.append('observacoes', formData.observacoes);
+    if (formData.favorecido_cnpj_cpf && !validateCNPJCPF(formData.favorecido_cnpj_cpf)) {
+      toast.error('CNPJ/CPF inválido');
+      return;
+    }
 
-        const result = await criarConta(formDataToSend);
+    setIsSubmitting(true);
 
-        if (result.success) {
-          toast.success('Conta criada com sucesso!');
-          router.push('/contas');
-        } else {
-          toast.error(result.error || 'Erro ao criar conta');
-        }
-      } catch (error) {
-        console.error('Erro ao criar conta:', error);
-        toast.error('Erro ao criar conta');
-      } finally {
-        setIsSubmitting(false);
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('descricao', formData.descricao);
+      formDataToSend.append('valor', formData.valor);
+      formDataToSend.append('data_vencimento', formData.data_vencimento);
+
+      if (formData.fornecedor_id) formDataToSend.append('fornecedor_id', formData.fornecedor_id);
+      if (formData.favorecido_nome) formDataToSend.append('favorecido_nome', formData.favorecido_nome);
+      if (formData.favorecido_cnpj_cpf) formDataToSend.append('favorecido_cnpj_cpf', formData.favorecido_cnpj_cpf);
+      if (formData.empresa_pagadora_id) formDataToSend.append('empresa_pagadora_id', formData.empresa_pagadora_id);
+      if (formData.categoria_id) formDataToSend.append('categoria_id', formData.categoria_id);
+      if (formData.linha_digitavel) formDataToSend.append('linha_digitavel', formData.linha_digitavel);
+      if (formData.codigo_barras) formDataToSend.append('codigo_barras', formData.codigo_barras);
+      if (formData.observacoes) formDataToSend.append('observacoes', formData.observacoes);
+      
+      if (file) {
+        formDataToSend.append('file', file);
       }
+
+      const result = await criarConta(formDataToSend);
+
+      if (result.success) {
+        toast.success('Conta criada com sucesso!');
+        router.push('/contas');
+      } else {
+        toast.error(result.error || 'Erro ao criar conta');
+      }
+    } catch (error) {
+      console.error('Erro ao criar conta:', error);
+      toast.error('Erro ao criar conta');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -167,7 +182,7 @@ export function NovaContaClient({ lookup }: NovaContaClientProps) {
         </div>
 
         <div className="max-w-2xl">
-          <form onSubmit={handleSubmit}>
+          <form>
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Informações da Conta</CardTitle>
@@ -361,9 +376,24 @@ export function NovaContaClient({ lookup }: NovaContaClientProps) {
               <Button type="button" variant="outline" onClick={() => router.push('/contas')}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting || uploadLoading}>
-                {(isSubmitting || uploadLoading) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                {file ? 'Enviar para Processamento' : 'Cadastrar Conta'}
+              <Button 
+                type="button" 
+                variant="default"
+                onClick={handleRegistrarManualmente}
+                disabled={isSubmitting || uploadLoading}
+              >
+                {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Registrar Manualmente
+              </Button>
+              <Button 
+                type="button" 
+                variant="default"
+                className="bg-blue-600 hover:bg-blue-700 text-white ml-auto"
+                onClick={handleEnviarIA}
+                disabled={isSubmitting || uploadLoading || !file}
+              >
+                {uploadLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Enviar para IA
               </Button>
             </div>
           </form>

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { StatusBadge, ProcessamentoBadge } from '@/components/contas';
+
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -697,36 +697,51 @@ export function ContaDetailClient({
         </div>
 
         {/* Status */}
-        <div className="flex gap-4 mb-6">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="hover:opacity-80 transition-opacity focus:outline-none">
-                <Badge
-                  variant={
-                    conta.status === 'pago' ? 'success' : conta.status === 'vencido' ? 'destructive' : 'warning'
-                  }
-                  className="text-sm px-3 py-1 cursor-pointer"
-                >
-                  {conta.status.toUpperCase()}
+        {(() => {
+          const hoje = new Date().toISOString().split('T')[0];
+          const statusExibido =
+            conta.status === 'pendente' && conta.data_vencimento < hoje
+              ? 'vencido'
+              : conta.status;
+          const variantExibido =
+            statusExibido === 'pago'
+              ? 'success'
+              : statusExibido === 'vencido'
+              ? 'destructive'
+              : statusExibido === 'cancelado'
+              ? 'secondary'
+              : 'warning';
+
+          return (
+            <div className="flex gap-4 mb-6">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="hover:opacity-80 transition-opacity focus:outline-none">
+                    <Badge
+                      variant={variantExibido}
+                      className="text-sm px-3 py-1 cursor-pointer"
+                    >
+                      {statusExibido.toUpperCase()}
+                    </Badge>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => handleStatusChange('pendente')}>Pendente</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('pago')}>Pago</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('vencido')}>Vencido</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('cancelado')}>Cancelado</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {conta.conferido && (
+                <Badge variant="success" className="text-sm px-3 py-1">
+                  <Check className="h-3 w-3 mr-1" />
+                  Conferido
                 </Badge>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleStatusChange('pendente')}>Pendente</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleStatusChange('pago')}>Pago</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleStatusChange('vencido')}>Vencido</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleStatusChange('cancelado')}>Cancelado</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <ProcessamentoBadge status={conta.status_processamento as any} />
-          {conta.conferido && (
-            <Badge variant="success" className="text-sm px-3 py-1">
-              <Check className="h-3 w-3 mr-1" />
-              Conferido
-            </Badge>
-          )}
-        </div>
+              )}
+            </div>
+          );
+        })()}
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Dados Principais */}

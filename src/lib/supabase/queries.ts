@@ -37,6 +37,10 @@ export interface Estatisticas {
   pendentes: number;
   vencidas: number;
   proximosVencimentos: number;
+  pagoMesAnterior: number;
+  totalMesAtual: number;
+  pagoMesAtualAteHoje: number;
+  pagoMesAnteriorAteHoje: number;
 }
 
 export interface QueryResult<T> {
@@ -222,11 +226,37 @@ export async function queryConta(id: string): Promise<QueryResult<any>> {
 export async function queryEstatisticas(): Promise<QueryResult<Estatisticas>> {
   try {
     const supabase = await createClient();
-    const hoje = new Date().toISOString().split('T')[0];
+    // --- Datas para KPIs ---
+    const now = new Date();
+    const hoje = now.toISOString().split('T')[0];
     const seteDias = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const diaAtual = now.getDate();
+    
+    // Mês Atual
+    const inicioMesAtual = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const fimMesAtual = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    
+    // Mês Anterior
+    const inicioMesAnterior = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
+    const fimMesAnterior = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
+    
+    // Mês Anterior até o mesmo dia (comparativo)
+    const ultimoDiaMesAnterior = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+    const diaComparativo = Math.min(diaAtual, ultimoDiaMesAnterior);
+    const mesAnteriorAteHojeStr = new Date(now.getFullYear(), now.getMonth() - 1, diaComparativo).toISOString().split('T')[0];
 
     // Queries em paralelo
-    const [totalResult, pendentesResult, vencidasResult, proximosResult, valorResult] = await Promise.all([
+    const [
+      totalResult, 
+      pendentesResult, 
+      vencidasResult, 
+      proximosResult, 
+      valorResult,
+      pagoMesAnteriorResult,
+      totalMesAtualResult,
+      pagoMesAtualAteHojeResult,
+      pagoMesAnteriorAteHojeResult
+    ] = await Promise.all([
       // Total de contas não pagas
       supabase
         .from('contas_pagar')
@@ -258,22 +288,57 @@ export async function queryEstatisticas(): Promise<QueryResult<Estatisticas>> {
         .gte('data_vencimento', hoje)
         .lte('data_vencimento', seteDias),
 
-      // Soma dos valores
+      // Soma dos valores (pendentes)
       supabase.from('contas_pagar').select('valor').is('deleted_at', null).neq('status', 'pago'),
+
+      // 1. Pago mês anterior
+      supabase.from('contas_pagar')
+        .select('valor')
+        .is('deleted_at', null)
+        .eq('status', 'pago')
+        .gte('data_pagamento', inicioMesAnterior)
+        .lte('data_pagamento', fimMesAnterior),
+
+      // 2. Total mês atual (vencimento no mês)
+      supabase.from('contas_pagar')
+        .select('valor')
+        .is('deleted_at', null)
+        .gte('data_vencimento', inicioMesAtual)
+        .lte('data_vencimento', fimMesAtual),
+
+      // 3. Pago mês atual até hoje
+      supabase.from('contas_pagar')
+        .select('valor')
+        .is('deleted_at', null)
+        .eq('status', 'pago')
+        .gte('data_pagamento', inicioMesAtual)
+        .lte('data_pagamento', hoje),
+
+      // 4. Pago mês anterior até hoje (mesmo dia)
+      supabase.from('contas_pagar')
+        .select('valor')
+        .is('deleted_at', null)
+        .eq('status', 'pago')
+        .gte('data_pagamento', inicioMesAnterior)
+        .lte('data_pagamento', mesAnteriorAteHojeStr),
     ]);
 
-    // Calcular soma no cliente
-    const totalValor =
-      valorResult.data?.reduce((acc: number, curr: { valor: number | null }) => acc + Number(curr.valor || 0), 0) ||
-      0;
+    // Calcular somas
+    const sumValues = (data: any[] | null) => 
+      data?.reduce((acc: number, curr: { valor: number | null }) => acc + Number(curr.valor || 0), 0) || 0;
+
 
     return {
       data: {
         total: totalResult.count || 0,
-        totalValor,
+        totalValor: sumValues(valorResult.data),
         pendentes: pendentesResult.count || 0,
         vencidas: vencidasResult.count || 0,
         proximosVencimentos: proximosResult.count || 0,
+        pagoMesAnterior: sumValues(pagoMesAnteriorResult.data),
+        totalMesAtual: sumValues(totalMesAtualResult.data),
+        pagoMesAtualAteHoje: sumValues(pagoMesAtualAteHojeResult.data),
+        pagoMesAnteriorAteHoje: sumValues(pagoMesAnteriorAteHojeResult.data),
       },
       error: null,
     };

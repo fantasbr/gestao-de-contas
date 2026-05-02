@@ -15,14 +15,22 @@ interface Estatisticas {
   pendentes: number;
   vencidas: number;
   proximosVencimentos: number;
+  pagoMesAnterior: number;
+  totalMesAtual: number;
+  pagoMesAtualAteHoje: number;
+  pagoMesAnteriorAteHoje: number;
 }
 
 interface DashboardClientProps {
   stats: Estatisticas;
-  contas: any[];
 }
 
-export function DashboardClient({ stats, contas }: DashboardClientProps) {
+export function DashboardClient({ stats }: DashboardClientProps) {
+  const diferencaComparativa = stats.pagoMesAtualAteHoje - stats.pagoMesAnteriorAteHoje;
+  const porcentagemComparativa = stats.pagoMesAnteriorAteHoje > 0 
+    ? (diferencaComparativa / stats.pagoMesAnteriorAteHoje) * 100 
+    : 0;
+
   return (
     <>
       <Header />
@@ -74,60 +82,38 @@ export function DashboardClient({ stats, contas }: DashboardClientProps) {
           />
         </div>
 
-        {/* Últimas contas */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Últimas Contas</CardTitle>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/contas">Ver todas</Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {contas.length === 0 ? (
-              <div className="text-center py-8">
-                <Receipt className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Nenhuma conta cadastrada</p>
-                <Button className="mt-4" asChild>
-                  <Link href="/contas/nova">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Cadastrar primeira conta
-                  </Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {contas.map((conta) => (
-                  <Link
-                    key={conta.id}
-                    href={`/contas/${conta.id}`}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <span className="font-medium hover:underline truncate block">
-                        {conta.descricao}
-                      </span>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-sm text-muted-foreground">
-                          {conta.fornecedor?.nome || conta.favorecido_nome || 'Sem fornecedor'}
-                        </span>
-                        <span className="text-muted-foreground">•</span>
-                        <span className="text-sm text-muted-foreground">
-                          Vence em {formatDate(conta.data_vencimento)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <StatusBadge status={conta.status} />
-                      <span className="font-semibold whitespace-nowrap">
-                        {formatCurrency(Number(conta.valor))}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* KPIs de Fluxo e Comparativo */}
+        <h2 className="text-xl font-semibold mb-4 mt-8">Performance Mensal</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+          <StatsCard
+            title="Pago (Mês Anterior)"
+            value={formatCurrency(stats.pagoMesAnterior)}
+            subtitle="Total fechado do mês passado"
+            icon={CheckCircle}
+            variant="default"
+          />
+          <StatsCard
+            title="Geral (Mês Atual)"
+            value={formatCurrency(stats.totalMesAtual)}
+            subtitle="Total de contas com vencimento este mês"
+            icon={Receipt}
+            variant="default"
+          />
+          <StatsCard
+            title="Pago (Até Hoje)"
+            value={formatCurrency(stats.pagoMesAtualAteHoje)}
+            subtitle="Pagamentos realizados este mês"
+            icon={CheckCircle}
+            variant="success"
+          />
+          <StatsCard
+            title="Vs Mês Anterior"
+            value={formatCurrency(Math.abs(diferencaComparativa))}
+            subtitle={`${diferencaComparativa >= 0 ? 'Mais' : 'Menos'} que o mesmo período anterior (${porcentagemComparativa.toFixed(1)}%)`}
+            icon={AlertTriangle}
+            variant={diferencaComparativa <= 0 ? 'success' : 'warning'}
+          />
+        </div>
       </div>
     </>
   );
