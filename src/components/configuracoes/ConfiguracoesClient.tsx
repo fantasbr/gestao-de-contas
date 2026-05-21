@@ -41,7 +41,10 @@ interface ConfiguracoesClientProps {
   hasToken: boolean;
 }
 
-export function ConfiguracoesClient({ initialWebhooks, hasToken }: ConfiguracoesClientProps) {
+export function ConfiguracoesClient({
+  initialWebhooks,
+  hasToken,
+}: ConfiguracoesClientProps) {
   const router = useRouter();
   const [webhooks] = useState(initialWebhooks);
   const [tokenApi, setTokenApi] = useState('•••••••••••••••');
@@ -124,7 +127,7 @@ export function ConfiguracoesClient({ initialWebhooks, hasToken }: Configuracoes
     }
 
     try {
-      const res = await fetch('/api/webhooks', {
+      const res = await fetch(editando ? `/api/webhooks/${editando.id}` : '/api/webhooks', {
         method: editando ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -378,6 +381,7 @@ export function ConfiguracoesClient({ initialWebhooks, hasToken }: Configuracoes
               </CardContent>
             </Card>
           </TabsContent>
+
         </Tabs>
       </div>
     </>

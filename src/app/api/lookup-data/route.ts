@@ -1,10 +1,15 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireRole } from '@/lib/api/auth';
 
 export async function GET() {
-  const supabase = await createClient();
+  const auth = await requireRole(['admin', 'atendente']);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
+  const supabase = auth.supabase;
   
   try {
     const [fornecedoresResult, empresasResult, categoriasResult] = await Promise.all([

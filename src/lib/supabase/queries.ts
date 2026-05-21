@@ -75,7 +75,7 @@ export async function queryContas(
         `
         *,
         fornecedor:fornecedores(id, nome),
-        categoria:categorias(id, nome),
+        categoria:categorias(id, nome, cor),
         empresa:empresas(id_empresa, nome)
       `,
         { count: 'exact' }

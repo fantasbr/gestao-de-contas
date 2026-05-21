@@ -37,7 +37,7 @@ interface Conta {
   conferido: boolean;
   fornecedor?: { id: string; nome: string };
   favorecido_nome?: string;
-  categoria?: { id: string; nome: string };
+  categoria?: { id: string; nome: string; cor?: string | null };
 }
 
 interface LookupData {
@@ -321,7 +321,19 @@ export function ContasClient({
                             {conta.descricao}
                           </Link>
                           {conta.categoria && (
-                            <Badge variant="outline" className="ml-2 text-xs">
+                            <Badge
+                              variant={conta.categoria.cor ? 'default' : 'outline'}
+                              className="ml-2 text-xs"
+                              style={
+                                conta.categoria.cor
+                                  ? {
+                                      backgroundColor: conta.categoria.cor,
+                                      borderColor: conta.categoria.cor,
+                                      color: '#fff',
+                                    }
+                                  : undefined
+                              }
+                            >
                               {conta.categoria.nome}
                             </Badge>
                           )}

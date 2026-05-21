@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/api/auth';
 
 // GET /api/config
 export async function GET() {
-  const supabase = await createClient();
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return auth.response;
+  }
+
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from('api_configuracoes')
@@ -22,7 +27,12 @@ export async function GET() {
 
 // PATCH /api/config
 export async function PATCH(request: NextRequest) {
-  const supabase = await createClient();
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return auth.response;
+  }
+
+  const supabase = auth.supabase;
   const body = await request.json();
 
   const { api_token } = body;

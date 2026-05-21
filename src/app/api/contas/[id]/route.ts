@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin, requireRole } from '@/lib/api/auth';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -7,8 +7,13 @@ interface RouteParams {
 
 // GET /api/contas/[id]
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const auth = await requireRole(['admin', 'atendente']);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = auth.supabase;
 
   const { data, error } = await supabase
     .from('contas_pagar')
@@ -23,7 +28,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     .single();
 
   if (error || !data) {
-    return NextResponse.json({ error: 'Conta não encontrada' }, { status: 404 });
+    return NextResponse.json({ error: 'Conta nao encontrada' }, { status: 404 });
   }
 
   return NextResponse.json(data);
@@ -31,16 +36,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/contas/[id]
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  const { id } = await params;
-  const supabase = await createClient();
-  const body = await request.json();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+  const auth = await requireRole(['admin', 'atendente']);
+  if (!auth.ok) {
+    return auth.response;
   }
+
+  const { id } = await params;
+  const supabase = auth.supabase;
+  const body = await request.json();
 
   // Buscar dados anteriores
   const { data: anterior } = await supabase
@@ -66,7 +69,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     acao: 'editado',
     dados_anteriores: anterior,
     dados_novos: data,
-    realizado_por: user.id,
+    realizado_por: auth.userId,
   });
 
   return NextResponse.json(data);
@@ -74,26 +77,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/contas/[id]
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const { id } = await params;
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-  }
-
-  // Verificar se é admin
-  const { data: perfil } = await supabase
-    .from('perfis_usuarios')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (perfil?.role !== 'admin') {
-    return NextResponse.json({ error: 'Apenas admin pode excluir' }, { status: 403 });
-  }
+  const supabase = auth.supabase;
 
   const { error } = await supabase
     .from('contas_pagar')
@@ -108,7 +98,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   await supabase.from('contas_log').insert({
     conta_id: id,
     acao: 'excluido',
-    realizado_por: user.id,
+    realizado_por: auth.userId,
   });
 
   return NextResponse.json({ success: true });

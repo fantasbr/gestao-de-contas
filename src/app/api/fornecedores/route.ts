@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireRole } from '@/lib/api/auth';
 
 // GET /api/fornecedores
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
+  const auth = await requireRole(['admin', 'atendente']);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
+  const supabase = auth.supabase;
   const { searchParams } = new URL(request.url);
   const busca = searchParams.get('busca') || '';
 
@@ -29,14 +34,17 @@ export async function GET(request: NextRequest) {
 
 // POST /api/fornecedores
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const body = await request.json();
+  const auth = await requireRole(['admin', 'atendente']);
+  if (!auth.ok) {
+    return auth.response;
+  }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const supabase = auth.supabase;
+  const body = await request.json();
 
   const { data, error } = await supabase
     .from('fornecedores')
-    .insert({ ...body, created_by: user?.id })
+    .insert({ ...body, created_by: auth.userId })
     .select()
     .single();
 

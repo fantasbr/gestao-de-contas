@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireRole } from '@/lib/api/auth';
+import { requireApiToken } from '@/lib/api/api-token';
 import type { StatusConta } from '@/types/database';
 
 // GET /api/contas - Listar contas
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
+  const auth = await requireRole(['admin', 'atendente']);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
+  const supabase = auth.supabase;
   const { searchParams } = new URL(request.url);
 
   const page = parseInt(searchParams.get('page') || '1');
@@ -51,7 +57,12 @@ export async function GET(request: NextRequest) {
 
 // POST /api/contas - Criar conta (via n8n)
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
+  const auth = await requireApiToken(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
+  const supabase = auth.supabase;
   const body = await request.json();
 
   try {

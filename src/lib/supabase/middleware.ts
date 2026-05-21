@@ -2,12 +2,13 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getSupabasePublicEnv } from '@/lib/supabase/env';
-import type { Database } from '@/types';
+import type { Database, RoleUsuario } from '@/types';
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
 export interface SessionUpdateResult {
   cookiesToSet: CookieToSet[];
+  role: RoleUsuario | null;
   response: NextResponse;
   user: User | null;
 }
@@ -17,7 +18,7 @@ export async function updateSession(request: NextRequest): Promise<SessionUpdate
   const env = getSupabasePublicEnv();
 
   if (!env) {
-    return { cookiesToSet: [], response: supabaseResponse, user: null };
+    return { cookiesToSet: [], role: null, response: supabaseResponse, user: null };
   }
 
   let cookiesToSet: CookieToSet[] = [];
@@ -53,5 +54,17 @@ export async function updateSession(request: NextRequest): Promise<SessionUpdate
     data: { user },
   } = await supabase.auth.getUser();
 
-  return { cookiesToSet, response: supabaseResponse, user };
+  let role: RoleUsuario | null = null;
+
+  if (user) {
+    const { data: perfil } = await supabase
+      .from('perfis_usuarios')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    role = perfil?.role ?? null;
+  }
+
+  return { cookiesToSet, role, response: supabaseResponse, user };
 }

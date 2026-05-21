@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireRole } from '@/lib/api/auth';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -7,17 +7,20 @@ interface RouteParams {
 
 // PATCH /api/contas/[id]/conferir
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  const { id } = await params;
-  const supabase = await createClient();
-  const body = await request.json();
+  const auth = await requireRole(['admin', 'atendente']);
+  if (!auth.ok) {
+    return auth.response;
+  }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { id } = await params;
+  const supabase = auth.supabase;
+  const body = await request.json();
 
   const { data, error } = await supabase
     .from('contas_pagar')
     .update({
       conferido: true,
-      conferido_por: user?.id,
+      conferido_por: auth.userId,
       conferido_em: new Date().toISOString(),
       observacao_conferido: body.observacao_conferido || null,
     })
@@ -34,7 +37,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     conta_id: id,
     acao: 'conferido',
     dados_novos: data,
-    realizado_por: user?.id,
+    realizado_por: auth.userId,
   });
 
   return NextResponse.json(data);

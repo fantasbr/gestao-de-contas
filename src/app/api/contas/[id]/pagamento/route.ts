@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireApiToken } from '@/lib/api/api-token';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -7,11 +7,14 @@ interface RouteParams {
 
 // PATCH /api/contas/[id]/pagamento
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  const { id } = await params;
-  const supabase = await createClient();
-  const body = await request.json();
+  const auth = await requireApiToken(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { id } = await params;
+  const supabase = auth.supabase;
+  const body = await request.json();
 
   // Buscar dados anteriores
   const { data: anterior } = await supabase
@@ -41,7 +44,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     acao: 'pago',
     dados_anteriores: anterior,
     dados_novos: data,
-    realizado_por: user?.id,
+    realizado_por: null,
   });
 
   return NextResponse.json(data);

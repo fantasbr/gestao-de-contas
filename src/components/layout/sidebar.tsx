@@ -24,13 +24,13 @@ const menuItems = [
     title: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
-    roles: ['admin', 'atendente', 'motorista'],
+    roles: ['admin', 'atendente'],
   },
   {
     title: 'Contas a Pagar',
     href: '/contas',
     icon: Receipt,
-    roles: ['admin', 'atendente', 'motorista'],
+    roles: ['admin', 'atendente'],
   },
   {
     title: 'Contas Pagas',
@@ -154,4 +154,3 @@ export function Sidebar() {
     </aside>
   );
 }
-

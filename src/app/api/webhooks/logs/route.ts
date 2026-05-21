@@ -1,10 +1,15 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/api/auth';
 
 export async function GET(request: Request) {
-  const supabase = await createClient();
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return auth.response;
+  }
+
+  const supabase = auth.supabase;
   
   const { searchParams } = new URL(request.url);
   const webhook_id = searchParams.get('webhook_id');

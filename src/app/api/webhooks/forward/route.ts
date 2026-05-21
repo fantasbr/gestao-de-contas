@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireRole } from '@/lib/api/auth';
 
 // POST /api/webhooks/forward
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
+  const auth = await requireRole(['admin', 'atendente']);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
+  const supabase = auth.supabase;
   const body = await request.json();
 
   const { nome_evento, arquivo_base64, mime_type, conta_id, dados } = body;

@@ -30,6 +30,7 @@ interface Conta {
   valor: number;
   data_vencimento: string;
   data_pagamento?: string;
+  status?: string;
   fornecedor?: { id: string; nome: string };
   favorecido_nome?: string;
 }
@@ -40,7 +41,6 @@ interface RelatoriosClientProps {
 }
 
 export function RelatoriosClient({ initialContas, fornecedores }: RelatoriosClientProps) {
-  const [contas] = useState(initialContas);
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [fornecedorId, setFornecedorId] = useState('');
@@ -48,13 +48,21 @@ export function RelatoriosClient({ initialContas, fornecedores }: RelatoriosClie
   // Filtrar contas por data e fornecedor (client-side para interatividade)
   const contasFiltradas = useMemo(() => {
     return initialContas.filter((conta) => {
+      if (dataInicio && conta.data_vencimento < dataInicio) {
+        return false;
+      }
+
+      if (dataFim && conta.data_vencimento > dataFim) {
+        return false;
+      }
+
       // Filtrar por fornecedor
       if (fornecedorId && fornecedorId !== 'todos' && conta.fornecedor?.id !== fornecedorId) {
         return false;
       }
       return true;
     });
-  }, [initialContas, fornecedorId]);
+  }, [initialContas, dataInicio, dataFim, fornecedorId]);
 
   // Calcular totais
   const totalGeral = useMemo(() => {
@@ -81,7 +89,7 @@ export function RelatoriosClient({ initialContas, fornecedores }: RelatoriosClie
       c.data_vencimento,
       c.data_pagamento || '',
       c.valor,
-      'pago',
+      c.status || '',
     ]);
 
     const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');

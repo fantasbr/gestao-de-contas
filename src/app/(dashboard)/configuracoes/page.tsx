@@ -3,11 +3,22 @@
  */
 import { createClient } from '@/lib/supabase/server';
 import { ConfiguracoesClient } from '@/components/configuracoes';
+import { getCurrentUser } from '@/actions/auth';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ConfiguracoesPage() {
   const supabase = await createClient();
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  if (user.perfil?.role !== 'admin') {
+    redirect('/dashboard');
+  }
 
   // Buscar webhooks (tabela app_webhooks)
   const { data: webhooks } = await supabase
@@ -29,5 +40,10 @@ export default async function ConfiguracoesPage() {
     descricao: webhook.descricao || undefined,
   }));
 
-  return <ConfiguracoesClient initialWebhooks={normalizedWebhooks} hasToken={hasToken} />;
+  return (
+    <ConfiguracoesClient
+      initialWebhooks={normalizedWebhooks}
+      hasToken={hasToken}
+    />
+  );
 }

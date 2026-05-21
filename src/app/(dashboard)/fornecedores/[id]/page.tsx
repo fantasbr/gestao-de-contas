@@ -26,11 +26,13 @@ export default async function FornecedorDetailPage({ params }: { params: { id: s
 
   // Buscar todas as contas do fornecedor (sem limite inicial alto para garantir lista completa)
   const { data: contas } = await queryContas({ fornecedor_id: id }, 1, 1000);
+  const podeExcluir = user.role === 'admin' || user.perfil?.role === 'admin';
 
   return (
     <FornecedorDetailClient 
       fornecedor={fornecedor}
       contas={contas}
+      podeExcluir={podeExcluir}
     />
   );
 }

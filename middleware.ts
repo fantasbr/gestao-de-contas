@@ -18,6 +18,19 @@ function redirectWithCookies(url: URL, cookiesToSet: CookieToSet[]) {
   return redirectResponse;
 }
 
+function forbiddenWithCookies(cookiesToSet: CookieToSet[]) {
+  const forbiddenResponse = new NextResponse('Acesso nao autorizado', { status: 403 });
+
+  cookiesToSet.forEach(({ name, value, options }) => {
+    forbiddenResponse.cookies.set(name, value, options);
+  });
+
+  forbiddenResponse.headers.set('Content-Security-Policy', "frame-ancestors *;");
+  forbiddenResponse.headers.delete('X-Frame-Options');
+
+  return forbiddenResponse;
+}
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
@@ -26,6 +39,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/contas') ||
     pathname.startsWith('/contas-pagas') ||
+    pathname.startsWith('/conciliacao') ||
     pathname.startsWith('/fornecedores') ||
     pathname.startsWith('/categorias') ||
     pathname.startsWith('/empresas') ||
@@ -38,9 +52,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  const { response: sessionResponse, user, cookiesToSet } = await updateSession(request);
+  const { response: sessionResponse, role, user, cookiesToSet } = await updateSession(request);
 
   if (pathname === '/') {
+    if (user && role === 'motorista') {
+      return forbiddenWithCookies(cookiesToSet);
+    }
+
     const url = request.nextUrl.clone();
     url.pathname = user ? '/dashboard' : '/login';
     return redirectWithCookies(url, cookiesToSet);
@@ -53,7 +71,15 @@ export async function middleware(request: NextRequest) {
     return redirectWithCookies(url, cookiesToSet);
   }
 
+  if (isProtectedRoute && role === 'motorista') {
+    return forbiddenWithCookies(cookiesToSet);
+  }
+
   if (isAuthRoute && user) {
+    if (role === 'motorista') {
+      return forbiddenWithCookies(cookiesToSet);
+    }
+
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return redirectWithCookies(url, cookiesToSet);

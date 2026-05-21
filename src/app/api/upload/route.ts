@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireRole } from '@/lib/api/auth';
 
 const optionalContaFields = [
   'fornecedor_id',
@@ -16,6 +16,11 @@ const optionalContaFields = [
 // Recebe arquivo, converte para base64 e envia para o webhook (n8n)
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireRole(['admin', 'atendente']);
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const tipo = formData.get('tipo') as string || 'contas';
@@ -60,7 +65,7 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
     const base64 = buffer.toString('base64');
 
-    const supabase = await createClient();
+    const supabase = auth.supabase;
 
     // Mapear tipo para nome do webhook
     const webhookMap: Record<string, string> = {

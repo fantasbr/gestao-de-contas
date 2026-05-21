@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Header } from '@/components/layout';
 import { formatCurrency, formatDate, maskCNPJCPF, maskPhone } from '@/lib/utils';
 import { StatusBadge } from '@/components/contas';
+import { excluirFornecedor } from '@/actions/fornecedores';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Building,
@@ -22,7 +24,18 @@ import {
   Search,
   Filter,
   ExternalLink,
+  Loader2,
+  Trash2,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -60,10 +73,13 @@ interface Conta {
 interface FornecedorDetailClientProps {
   fornecedor: Fornecedor;
   contas: Conta[];
+  podeExcluir?: boolean;
 }
 
-export function FornecedorDetailClient({ fornecedor, contas }: FornecedorDetailClientProps) {
+export function FornecedorDetailClient({ fornecedor, contas, podeExcluir = false }: FornecedorDetailClientProps) {
   const router = useRouter();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Estados para filtros
   const [busca, setBusca] = useState('');
@@ -88,6 +104,26 @@ export function FornecedorDetailClient({ fornecedor, contas }: FornecedorDetailC
     });
   }, [contas, busca, dataInicio, dataFim, valorMin, valorMax]);
 
+  const handleExcluirFornecedor = async () => {
+    setIsDeleting(true);
+    try {
+      const result = await excluirFornecedor(fornecedor.id);
+
+      if (result.success) {
+        toast.success('Fornecedor excluido!');
+        setShowDeleteDialog(false);
+        router.push('/fornecedores');
+      } else {
+        toast.error(result.error || 'Erro ao excluir fornecedor');
+      }
+    } catch (error) {
+      console.error('Erro ao excluir fornecedor:', error);
+      toast.error('Erro ao excluir fornecedor');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <>
       <Header />
@@ -103,8 +139,34 @@ export function FornecedorDetailClient({ fornecedor, contas }: FornecedorDetailC
             <h1 className="text-3xl font-bold">{fornecedor.nome}</h1>
             <p className="text-muted-foreground">Detalhes do Fornecedor e Histórico de Contas</p>
           </div>
+          {podeExcluir && (
+            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+              <DialogTrigger asChild>
+                <Button variant="destructive">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Excluir fornecedor</DialogTitle>
+                  <DialogDescription>
+                    Tem certeza que deseja excluir este fornecedor? O cadastro sera removido da listagem, mas o historico de contas permanecera preservado.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>
+                    Cancelar
+                  </Button>
+                  <Button variant="destructive" onClick={handleExcluirFornecedor} disabled={isDeleting}>
+                    {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Excluir fornecedor
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
-
         <div className="grid gap-6 md:grid-cols-3">
           {/* Informações de Contato */}
           <Card className="md:col-span-1">

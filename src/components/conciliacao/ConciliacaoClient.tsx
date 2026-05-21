@@ -56,6 +56,7 @@ interface ContaPagaItem {
   data_pagamento: string | null;
   valor_documento: number | null;
   juros_multa: number | null;
+  desconto_abatimento?: number | null;
   valor_pago: number | null;
   url_pdf: string | null;
   tipo: string | null;
@@ -68,33 +69,87 @@ interface ConciliacaoClientProps {
   contasPagas: ContaPagaItem[];
 }
 
+function toFiniteNumber(value: unknown): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function valoresPossiveisContaPaga(paga: ContaPagaItem): number[] {
+  const valores = [
+    toFiniteNumber(paga.valor_pago),
+    toFiniteNumber(paga.valor_documento),
+  ];
+
+  const valorDocumento = toFiniteNumber(paga.valor_documento);
+  const juros = toFiniteNumber(paga.juros_multa) ?? 0;
+  const desconto = toFiniteNumber(paga.desconto_abatimento) ?? 0;
+
+  if (valorDocumento !== null) {
+    valores.push(valorDocumento + juros - desconto);
+  }
+
+  return [...new Set(valores.filter((valor): valor is number => valor !== null && valor > 0))];
+}
+
+function valorPrincipalContaPaga(paga: ContaPagaItem): number {
+  return valoresPossiveisContaPaga(paga)[0] ?? 0;
+}
+
+function diferencaValorRelativa(pagar: ContaPagarItem, paga: ContaPagaItem): number {
+  const vPagar = toFiniteNumber(pagar.valor);
+  if (!vPagar || vPagar <= 0) return Number.POSITIVE_INFINITY;
+
+  const diffs = valoresPossiveisContaPaga(paga).map(valor => Math.abs(vPagar - valor) / vPagar);
+  return diffs.length > 0 ? Math.min(...diffs) : Number.POSITIVE_INFINITY;
+}
+
+function diferencaDias(pagar: ContaPagarItem, paga: ContaPagaItem): number {
+  const datas = [paga.data_pagamento, paga.data_vencimento].filter(Boolean) as string[];
+  if (!pagar.data_vencimento || datas.length === 0) return Number.POSITIVE_INFINITY;
+
+  const dVenc = new Date(pagar.data_vencimento).getTime();
+  const diffs = datas
+    .map(data => Math.abs((new Date(data).getTime() - dVenc) / 86400000))
+    .filter(Number.isFinite);
+
+  return diffs.length > 0 ? Math.min(...diffs) : Number.POSITIVE_INFINITY;
+}
+
+function normalizarTexto(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\b(ltda|me|epp|sa|s\/a|eireli|comercio|servicos|servico|pagamento)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function calcularScore(pagar: ContaPagarItem, paga: ContaPagaItem): number {
   let score = 0;
 
-  // Valor (±5%): até 40 pts
-  const vPagar = Number(pagar.valor);
-  const vPaga = Number(paga.valor_pago ?? paga.valor_documento ?? 0);
-  if (vPagar > 0 && vPaga > 0) {
-    const diff = Math.abs(vPagar - vPaga) / vPagar;
-    if (diff <= 0.02) score += 40;
+  // Valor: ate 45 pts
+  const diff = diferencaValorRelativa(pagar, paga);
+  if (Number.isFinite(diff)) {
+    if (diff <= 0.005) score += 45;
+    else if (diff <= 0.02) score += 40;
     else if (diff <= 0.05) score += 28;
     else if (diff <= 0.10) score += 14;
   }
 
-  // Data (diferença em dias): até 30 pts
-  if (pagar.data_vencimento && paga.data_pagamento) {
-    const dVenc = new Date(pagar.data_vencimento).getTime();
-    const dPago = new Date(paga.data_pagamento).getTime();
-    const diffDays = Math.abs((dPago - dVenc) / 86400000);
+  // Data: ate 30 pts
+  const diffDays = diferencaDias(pagar, paga);
+  if (Number.isFinite(diffDays)) {
     if (diffDays <= 2)  score += 30;
     else if (diffDays <= 7)  score += 22;
     else if (diffDays <= 15) score += 12;
     else if (diffDays <= 30) score += 5;
   }
 
-  // Nome: até 30 pts
-  const nomePagar = (pagar.favorecido_nome ?? pagar.fornecedor?.nome ?? '').toLowerCase();
-  const nomePaga  = (paga.beneficiario_nome ?? '').toLowerCase();
+  // Nome: ate 30 pts
+  const nomePagar = normalizarTexto(pagar.favorecido_nome ?? pagar.fornecedor?.nome ?? '');
+  const nomePaga  = normalizarTexto(paga.beneficiario_nome ?? '');
   if (nomePagar && nomePaga) {
     if (nomePagar === nomePaga) score += 30;
     else if (nomePagar.includes(nomePaga) || nomePaga.includes(nomePagar)) score += 22;
@@ -163,7 +218,18 @@ export function ConciliacaoClient({ contasPagar, contasPagas }: ConciliacaoClien
       (c.descricao ?? '').toLowerCase().includes(q)
     );
     if (selectedPagar) {
-      list = [...list].sort((a, b) => (scores.get(b.id) ?? 0) - (scores.get(a.id) ?? 0));
+      list = [...list].sort((a, b) => {
+        const scoreDiff = (scores.get(b.id) ?? 0) - (scores.get(a.id) ?? 0);
+        if (scoreDiff !== 0) return scoreDiff;
+
+        const valorDiff = diferencaValorRelativa(selectedPagar, a) - diferencaValorRelativa(selectedPagar, b);
+        if (valorDiff !== 0) return valorDiff;
+
+        const dataDiff = diferencaDias(selectedPagar, a) - diferencaDias(selectedPagar, b);
+        if (dataDiff !== 0) return dataDiff;
+
+        return b.id - a.id;
+      });
     }
     return list;
   }, [contasPagas, buscaPaga, selectedPagar, scores]);
@@ -424,7 +490,7 @@ export function ConciliacaoClient({ contasPagar, contasPagas }: ConciliacaoClien
                         )}
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-emerald-600">{formatCurrency(Number(cp.valor_pago ?? 0))}</p>
+                        <p className="text-sm font-bold text-emerald-600">{formatCurrency(valorPrincipalContaPaga(cp))}</p>
                         {cp.juros_multa && cp.juros_multa > 0 && (
                           <p className="text-[10px] text-destructive">
                             +{formatCurrency(cp.juros_multa)} juros
@@ -497,7 +563,7 @@ export function ConciliacaoClient({ contasPagar, contasPagas }: ConciliacaoClien
                 <p className="text-xs text-muted-foreground">{selectedPaga?.pagador_nome ?? '—'}</p>
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-xs text-muted-foreground">Valor Pago</span>
-                  <span className="font-bold text-emerald-600">{formatCurrency(Number(selectedPaga?.valor_pago ?? 0))}</span>
+                  <span className="font-bold text-emerald-600">{formatCurrency(selectedPaga ? valorPrincipalContaPaga(selectedPaga) : 0)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">Data Pgto.</span>
