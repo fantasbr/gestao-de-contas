@@ -187,9 +187,10 @@ export function ContasPagasClient({
 
         {/* Filtros */}
         <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="relative">
+          <CardContent className="pt-6 space-y-3">
+            {/* Linha 1: busca + tipo + limpar */}
+            <div className="flex flex-wrap gap-3">
+              <div className="relative flex-1 min-w-[180px]">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar beneficiário/pagador"
@@ -203,7 +204,7 @@ export function ContasPagasClient({
                 value={filtros.tipo}
                 onValueChange={(value) => updateFilters({ tipo: value === 'todos' ? '' : value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Tipo de Despesa" />
                 </SelectTrigger>
                 <SelectContent>
@@ -213,43 +214,50 @@ export function ContasPagasClient({
                 </SelectContent>
               </Select>
 
-              <div className="flex gap-2 items-center">
-                <span className="text-sm whitespace-nowrap">Pgto:</span>
-                <Input
-                  type="date"
-                  value={filtros.data_pagamento_inicio}
-                  onChange={(e) => updateFilters({ data_pagamento_inicio: e.target.value })}
-                  className="w-auto"
-                />
-                <span className="text-sm">até</span>
-                <Input
-                  type="date"
-                  value={filtros.data_pagamento_fim}
-                  onChange={(e) => updateFilters({ data_pagamento_fim: e.target.value })}
-                  className="w-auto"
-                />
-              </div>
-
-              <div className="flex gap-2 items-center">
-                <span className="text-sm whitespace-nowrap">Venc:</span>
-                <Input
-                  type="date"
-                  value={filtros.data_vencimento_inicio}
-                  onChange={(e) => updateFilters({ data_vencimento_inicio: e.target.value })}
-                  className="w-auto"
-                />
-                <span className="text-sm">até</span>
-                <Input
-                  type="date"
-                  value={filtros.data_vencimento_fim}
-                  onChange={(e) => updateFilters({ data_vencimento_fim: e.target.value })}
-                  className="w-auto"
-                />
-              </div>
-
-              <Button variant="outline" onClick={limparFiltros} className="md:col-start-4">
+              <Button variant="outline" onClick={limparFiltros}>
                 Limpar Filtros
               </Button>
+            </div>
+
+            {/* Linha 2: períodos de data */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Data de Pagamento</p>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={filtros.data_pagamento_inicio}
+                    onChange={(e) => updateFilters({ data_pagamento_inicio: e.target.value })}
+                    className="flex-1 min-w-0"
+                  />
+                  <span className="text-xs text-muted-foreground shrink-0">até</span>
+                  <Input
+                    type="date"
+                    value={filtros.data_pagamento_fim}
+                    onChange={(e) => updateFilters({ data_pagamento_fim: e.target.value })}
+                    className="flex-1 min-w-0"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Data de Vencimento</p>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={filtros.data_vencimento_inicio}
+                    onChange={(e) => updateFilters({ data_vencimento_inicio: e.target.value })}
+                    className="flex-1 min-w-0"
+                  />
+                  <span className="text-xs text-muted-foreground shrink-0">até</span>
+                  <Input
+                    type="date"
+                    value={filtros.data_vencimento_fim}
+                    onChange={(e) => updateFilters({ data_vencimento_fim: e.target.value })}
+                    className="flex-1 min-w-0"
+                  />
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

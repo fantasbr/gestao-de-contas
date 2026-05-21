@@ -283,7 +283,7 @@ export function ConciliacaoClient({ contasPagar, contasPagas }: ConciliacaoClien
         <div className="px-6 py-4 border-b shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
+              <h1 className="text-3xl font-bold flex items-center gap-2">
                 <ArrowLeftRight className="h-6 w-6 text-primary" />
                 Conciliação Financeira
               </h1>
